@@ -84,6 +84,12 @@ setup(
 
     entry_points     = {
         'console_scripts': console_scripts,
-    }
+    },
+
+    #package_dir  = {'assisilib' : 'assisilib'},
+    package_data = {'assisilib' : ['examples/*.py'], },
+
+
+
 
 )
