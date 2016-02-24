@@ -1,0 +1,7 @@
+# this file is necessary because setuptools will ignore any entries in 
+#   data_files, package_data
+# if they are not within a python package, and possibly altogether if 
+# compiling source distributions ("python setup.py sdist")
+# see, e.g., http://stackoverflow.com/a/1857436
+
+include DESCRIPTION.rst
