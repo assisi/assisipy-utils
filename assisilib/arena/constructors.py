@@ -46,7 +46,6 @@ class BaseArena(object):
 
     def transformed(self, trans):
         '''
-        hmm, what does this mean
         apply a transform to a COPY of segments, and return/
         '''
         return apply_transform_to_group(self.segs, trans)
@@ -161,13 +160,13 @@ class StadiumArena(BaseArena):
 
 #}}}
 
-#{{{ StadiumArena
+#{{{ CircleArena
 class CircleArena(BaseArena):
     def __init__(self, radius=15.5, arc_steps=36, ww=1.0, bee_len=1.5,
                  **kwargs):
         '''
-        A rectangle with semi-circular ends.  This corresponds to one of the
-        enclosures used in the Graz bee lab, and is suitable for two CASUs.
+        A circular arena, corresponding to an enclosure used in the Graz bee
+        lab, suitable for four CASUs.
 
         By default, this arena will be positioned horizontally, about (0, 0).
         Transforms can be applied.
