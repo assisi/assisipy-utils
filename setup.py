@@ -46,7 +46,7 @@ long_description = read('DESCRIPTION.rst')
 
 # setting up entry points to code within the python package - hopefully..
 console_scripts = [
-            #['assisirun.py = assisipy.assisirun:main'],
+            ['run_multiagent = assisilib.mgmt.run_multiagent:main'],
 ]
 
 
@@ -87,7 +87,9 @@ setup(
     },
 
     #package_dir  = {'assisilib' : 'assisilib'},
-    package_data = {'assisilib' : ['examples/*.py'], },
+    package_data = {'assisilib' : ['examples/*.py',
+                                   'examples/beeconf/*',
+                                   ], },
 
 
 

@@ -37,7 +37,7 @@ os.killpg(pro.pid, signal.SIGTERM)  # Send the signal to all the process groups
 
 
 
-if __name__ == '__main__':
+def main():
     ''' execute the handler for all bees in the bee list '''
     parser = argparse.ArgumentParser()
     # input
@@ -116,3 +116,8 @@ if __name__ == '__main__':
 
     time.sleep(0.5)
     print "[] (bee behav wrapper) Finished at:",  datetime.datetime.fromtimestamp(time.time())
+
+
+
+if __name__ == '__main__':
+    main()

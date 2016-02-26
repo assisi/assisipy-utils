@@ -15,7 +15,7 @@ It is possible to use pip to install directly (without needing to download):
 
 This is only useful if you already have [`assisi-playground`](https://github.com/larics/assisi-playground) installed. See:
 
-http://assisipy.readthedocs.org/en/latest/assisipy.html
+http://assisipy.readthedocs.org/en/latest/
 
 
 

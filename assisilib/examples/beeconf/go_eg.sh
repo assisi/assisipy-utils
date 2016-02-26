@@ -21,7 +21,8 @@ sleep 1
 ./spawn_bees.py -r 11 -n 6 -ol ${SPEC_FILE} -e ./basic_bee.py
 
 # we want to run this, but because the ctrl-c doesn't propogate? we should do sep.
-python ../../mgmt/run_multiagent.py -ol ${SPEC_FILE} --logpath /tmp
+run_multiagent -ol ${SPEC_FILE} --logpath /tmp
+#python ../../mgmt/run_multiagent.py -ol ${SPEC_FILE} --logpath /tmp
 
 
 
