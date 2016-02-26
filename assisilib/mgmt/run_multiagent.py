@@ -21,8 +21,9 @@ import os
 import signal, subprocess
 import time, datetime
 import argparse
-import csv
 
+#from . import specs
+import specs
 
 '''
 # The os.setsid() is passed in the argument preexec_fn so
@@ -32,52 +33,6 @@ pro = subprocess.Popen(cmd, stdout=subprocess.PIPE,
 
 os.killpg(pro.pid, signal.SIGTERM)  # Send the signal to all the process groups
 '''
-
-def read_agent_handler_data(fname, ty_filter=None, verb=False):
-    '''
-    uses specification parser that is maintained with writer!
-    (which provides structured data)
-
-    returns a list of dicts, each dict having the following:
-        name
-        ty
-        pose
-        pa
-        sa
-        exec_script
-        local_conf
-
-    '''
-    data = []
-
-    # first read whole file
-    _specs = []
-    with open(fname, 'r') as fh:
-        R = csv.reader(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL,
-                skipinitialspace=True)
-        for row in R:
-            if len(row) != 9:
-                print "[W] incomplete specification."
-            _specs.append(row)
-
-    # now parse each spec into a dictionary
-    for (ty, name, x, y, theta, pub_addr, sub_addr, exec_script, conf)  in _specs:
-        if ty_filter is not None and ty.lower() != ty_filter:
-            continue
-        else:
-            _d = {
-                'name'        : name,
-                'type'        : ty,
-                'pose'        : (x, y, theta),
-                'pub_addr'    : pub_addr,
-                'sub_addr'    : sub_addr,
-                'exec_script' : exec_script,
-                'conf'        : conf,
-            }
-
-            data.append(_d)
-
-    return data
 
 
 
@@ -101,7 +56,7 @@ if __name__ == '__main__':
 
 
     # extract info from spec
-    agent_data = read_agent_handler_data(args.obj_listing)
+    agent_data = specs.read_agent_handler_data(args.obj_listing)
     # and summarise
     print "[I] {} agents to run:".format(
             len(agent_data), )
