@@ -8,7 +8,7 @@ A simple example of assisilib usage, spawning four CASUs and two oval arenas
 '''
 
 from assisipy import sim
-from assisilib import arena
+from assisipy_utils import arena
 from math import pi
 
 

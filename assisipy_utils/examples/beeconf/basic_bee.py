@@ -13,7 +13,7 @@ from assisipy import bee
 import os, yaml
 import time
 import random
-from assisilib.common import beelib
+from assisipy_utils.common import beelib
 
 
 #{{{ BasicBee

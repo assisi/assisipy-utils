@@ -8,7 +8,7 @@ arena.
 '''
 
 from assisipy import sim
-from assisilib import arena
+from assisipy_utils import arena
 
 
 if __name__ == '__main__':

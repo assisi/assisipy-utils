@@ -5,8 +5,8 @@ from math import pi
 from assisipy import sim
 import argparse
 import random
-from assisilib import arena
-from assisilib.mgmt import specs
+from assisipy_utils import arena
+from assisipy_utils.mgmt import specs
 
 
 if __name__ == '__main__':
