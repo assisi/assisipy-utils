@@ -1,6 +1,12 @@
 Change and release log
 ======================
 
+pre-0.3.1
+---------
+
+* added example of heterogeneous behavioural controllers
+
+
 0.3.0
 -----
 

@@ -5,7 +5,7 @@
 Library of utilities for use with assisi-python and assisi-playground
 
 
-**How to use**
+**How to install**
 
 It is possible to use pip to install directly (without needing to download):
 
@@ -17,6 +17,7 @@ on your path you will need to add it, for instance in your `.bashrc` file:
     $ echo 'export PATH=${PATH}:~/.local/bin:' >> ~/.bashrc
 
 or, for system-wide installation (script path should not require modification):
+
     # sudo pip install git+https://github.com/assisi/assisipy-lib.git
 
 This is only useful if you already have [`assisi-playground`](https://github.com/larics/assisi-playground) installed. See:
@@ -24,5 +25,14 @@ This is only useful if you already have [`assisi-playground`](https://github.com
 http://assisipy.readthedocs.org/en/latest/
 
 
+**How to use**
+
+See the examples directory for illustrations of:
+
+* spawning arenas, casus, and agents
+* executing behavioural controllers for multiple agents 
+   * with heterogeneous parameters
+   * with heterogeneous controller programs
+* 
 
 
