@@ -46,14 +46,14 @@ long_description = read('DESCRIPTION.rst')
 
 # setting up entry points to code within the python package - hopefully..
 console_scripts = [
-            ['run_multiagent = assisilib.mgmt.run_multiagent:main'],
+            ['run_multiagent = assisipy_utils.mgmt.run_multiagent:main'],
 ]
 
 
 
 setup(
-    name="assisilib",
-    version=find_version('assisilib', '__init__.py'),
+    name="assisipy_utils",
+    version=find_version('assisipy_utils', '__init__.py'),
     packages=find_packages(exclude=["doc"]),
 
     description="Utilities for simulations with ASSISI-playground.",
@@ -86,8 +86,8 @@ setup(
         'console_scripts': console_scripts,
     },
 
-    #package_dir  = {'assisilib' : 'assisilib'},
-    package_data = {'assisilib' : ['examples/*.py',
+    #package_dir  = {'assisipy_utils' : 'assisipy_utils'},
+    package_data = {'assisipy_utils' : ['examples/*.py',
                                    'examples/beeconf/*',
                                    ], },
 
