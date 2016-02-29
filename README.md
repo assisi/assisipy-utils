@@ -9,7 +9,8 @@ Library of utilities for use with assisi-python and assisi-playground
 
 It is possible to use pip to install directly (without needing to download):
 
-    $ pip install --user git+https://github.com/assisi/assisipy-lib.git
+    $ pip install --user git+https://github.com/assisi/assisipy-lib.git@v0.3.0
+
 
 Note that `pip` installs scripts to `~/.local/bin` and if this is not already
 on your path you will need to add it, for instance in your `.bashrc` file:
