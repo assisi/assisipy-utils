@@ -1,0 +1,26 @@
+# demo config file 2-casu, pair VIRTUAL.
+# RM, March 2016
+# 
+# 
+#  V top
+#  arena 1 has 9, 8 and is virtual
+#
+
+# arena 1 has 9, 8 and is VIRTUAL
+sim-sym_breaking_arena1:
+    # Casu names have to start with casu- in order for
+    # automatic spawning to work; they are also only
+    # allowed to contain letters, dashes and underscores
+    casu-sim-009 :
+        pose : {x : -9, y : +9, yaw : 0}
+        sub_addr : tcp://localhost:5555
+        pub_addr : tcp://localhost:5556
+        msg_addr : tcp://localhost:30209
+
+    casu-sim-008 :
+        pose : {x : -0, y : +9, yaw : 0}
+        sub_addr : tcp://localhost:5555
+        pub_addr : tcp://localhost:5556
+        msg_addr : tcp://localhost:30208
+
+
