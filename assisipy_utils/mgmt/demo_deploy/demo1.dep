@@ -1,0 +1,22 @@
+# this is a deployment file...
+
+sim-arena1:
+    # Casu names have to start with casu- in order for
+    # automatic spawning to work; they are also only
+    # allowed to contain letters, dashes and underscores
+    casu-sim-009 :
+        hostname : localhost
+        user : assisi
+        prefix : deploy
+        controller: simple_heater.py
+        args : ['--temp', '36.0', ]
+        extra: []
+
+    casu-sim-008 :
+        hostname : localhost
+        user : assisi
+        prefix : deploy
+        controller: simple_heater.py
+        args : ['--temp', '31.0', ]
+        extra: []
+

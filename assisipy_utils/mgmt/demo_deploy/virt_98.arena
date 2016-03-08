@@ -7,7 +7,7 @@
 #
 
 # arena 1 has 9, 8 and is VIRTUAL
-sim-sym_breaking_arena1:
+sim-arena1:
     # Casu names have to start with casu- in order for
     # automatic spawning to work; they are also only
     # allowed to contain letters, dashes and underscores

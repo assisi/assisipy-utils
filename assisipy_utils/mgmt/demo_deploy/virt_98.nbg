@@ -1,0 +1,9 @@
+# simple graph among two casus
+#   9<=>8
+#
+digraph demo_in_3x3 {
+    subgraph "sim-arena1" {
+        "casu-sim-009" -> "casu-sim-008" [ label = "link" ]
+        "casu-sim-008" -> "casu-sim-009" [ label = "link" ]
+    }
+}
