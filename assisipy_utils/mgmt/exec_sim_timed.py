@@ -30,7 +30,15 @@ import subprocess, signal
 import datetime, time
 
 DO_EXEC = False
+DO_TEST = True
 #
+_C_OKBLUE =  '\033[94m'
+_C_ENDC = '\033[0m'
+_C_WARNING = '\033[93m'
+_C_FAIL = '\033[91m'
+
+
+
 #{{{ support funcs
 class FakeProc(object):
     '''
@@ -56,7 +64,7 @@ def wrapped_subproc(do=True, *args, **kwargs):
         p1 = subprocess.Popen(*args, **kwargs)
     else:
         p1 = FakeProc()
-        print "[WWW] did not execute {}".format(args)
+        print _C_WARNING + "[WWW] did not execute {}".format(args) + _C_ENDC
 
     return p1
 
@@ -89,8 +97,9 @@ class SimHandler(object):
         with open(self.conf_file) as _f:
             self.config = yaml.safe_load(_f)
         # extract additional config requirements, with defaults
-        self.pg_cfg_file = self.config.get('playground_config', 'config/Playground.cfg')
-        self.sim_sec = int(self.config['simulation_runtime_mins'] * 60.)
+        self.pg_cfg_file = self.config.get('playground_config', None)
+        #self.pg_cfg_file = self.config.get('playground_config', 'config/Playground.cfg')
+        self.sim_sec = int(float(self.config['simulation_runtime_mins']) * 60.)
         self.calib_timeout = int(self.config.get("calib_timeout", 20))
 
         # user scripts -- if not defined in conf file, this section will be skipped
@@ -182,28 +191,29 @@ class SimHandler(object):
         os.chdir(wd)
 
         # non-blocking
-        pg_cmd = "{} -c {}".format(
-            self.TOOL_SIMULATOR,
+        pg_cmd = "{}".format(self.TOOL_SIMULATOR)
+        if self.pg_cfg_file is not None:
+            pg_cmd += " -c {}".format(
             os.path.join(self.project_root, self.pg_cfg_file))
         self.disp_cmd_to_exec(pg_cmd, )
-        p1 = wrapped_subproc(DO_EXEC, pg_cmd, stdout=subprocess.PIPE,
+        p1 = wrapped_subproc(DO_TEST, pg_cmd, stdout=subprocess.PIPE,
                 shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
 
         time.sleep(2.0)
         spwn_cmd = "{} ".format (self.TOOL_SPAWN_WALLS)
         self.disp_cmd_to_exec(spwn_cmd)
-        p2 = wrapped_subproc(DO_EXEC, spwn_cmd, stdout=subprocess.PIPE, shell=True)
+        p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
         p2.wait()
 
         spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['ARENA_FILE'])
         self.disp_cmd_to_exec(spwn_casus)
-        p2 = wrapped_subproc(DO_EXEC, spwn_casus, stdout=subprocess.PIPE, shell=True)
+        p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
         p2.wait()
 
         dply_cmd = "{} {}".format(self.TOOL_DEPLOY, self.config['PRJ_FILE'])
         self.disp_cmd_to_exec(dply_cmd)
-        p2 = wrapped_subproc(DO_EXEC, dply_cmd, stdout=subprocess.PIPE, shell=True)
+        p2 = wrapped_subproc(DO_TEST, dply_cmd, stdout=subprocess.PIPE, shell=True)
         p2.wait()
 
 
@@ -225,7 +235,7 @@ class SimHandler(object):
         casu_cmd = "{} {}".format(self.TOOL_CASU_EXEC, self.config['PRJ_FILE'])
         outf = open(os.path.join(self.logdir, "casu_stdout.log"), 'w')
         self.disp_cmd_to_exec(casu_cmd + "> {}".format(outf.name))
-        p1 = wrapped_subproc(DO_EXEC,  casu_cmd, stdout=outf,
+        p1 = wrapped_subproc(DO_TEST,  casu_cmd, stdout=outf,
                 shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
         self.f_handles.append(outf)
@@ -285,7 +295,7 @@ class SimHandler(object):
         '''
         blocking wait for the period defined in config.
         '''
-        self.disp_msg("running simulation here {}".format(self.sim_sec), level='W')
+        self.disp_msg("running simulation now,  {}s".format(self.sim_sec), level='W')
         time.sleep(self.sim_sec)
         self.disp_msg("simln done", level='W')
 
