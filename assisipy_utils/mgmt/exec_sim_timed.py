@@ -201,12 +201,14 @@ class SimHandler(object):
         self.p_handles.append(p1)
 
         time.sleep(2.0)
+
+        # we do walls here for each population
         spwn_cmd = "{} ".format (self.TOOL_SPAWN_WALLS)
         self.disp_cmd_to_exec(spwn_cmd)
         p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
         p2.wait()
 
-        spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['ARENA_FILE'])
+        spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['PRJ_FILE'])
         self.disp_cmd_to_exec(spwn_casus)
         p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
         p2.wait()
