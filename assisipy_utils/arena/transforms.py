@@ -177,6 +177,8 @@ class Transformation(object):
         self.theta = theta
 
     def __str__(self):
-        s =  "Transformation: Rotate by {{:{fmt}} and translate "
-        "by ({:{fmt}}, {:{fmt}})".format(self.theta, self.dx, self.dy)
+        s =  "Transformation: Rotate by {:{fmt}} and translate by ({:{fmt}}, {:{fmt}})".format(self.theta, self.dx, self.dy,
+                                         fmt='6.3f')
+        return s
+
 #}}}

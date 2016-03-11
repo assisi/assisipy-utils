@@ -115,3 +115,15 @@ def linspace(start, stop, n):
         yield start + h * i
 
 
+def read_reqs(fname):
+    with open(fname) as f:
+        _d = yaml.safe_load(f)
+        bl_bound = _d.get('base_bl')
+        tr_bound = _d.get('base_tr')
+        dx = _d.get('trans').get('dx')
+        dy = _d.get('trans').get('dy')
+        theta = _d.get('trans').get('theta')
+
+    trans = Transformation(dx, dy, theta)
+
+    return (bl_bound, tr_bound, trans)

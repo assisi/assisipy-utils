@@ -13,10 +13,11 @@ Abstract : Constructor classes of enclosures for agents.
 #from math import pi, sin, cos
 from math import pi
 
-from transforms import Point
+from transforms import Point, Transformation
 from transforms import rotate_polygon, translate_seq, apply_transform_to_group, xy_from_seq
 
 from minimal_arenas import create_arc_with_width
+import yaml
 
 
 ORIGIN = (0, 0, 0)
@@ -30,6 +31,7 @@ class BaseArena(object):
 
         self.bl_bound = (0,0)
         self.tr_bound = (0,0)
+        self.trans    = Transformation()
 
         self.segs = []
         self.color      = kwargs.get('color', (0.5, 0.5, 0.5))
@@ -42,7 +44,29 @@ class BaseArena(object):
 
     def transform(self, trans):
         ''' apply transform to segments, in place '''
-        self.segs = apply_transform_to_group(self.segs, trans)
+        self.trans = Transformation(dx=trans.dx, dy=trans.dy, theta=trans.theta)
+        self.segs  = apply_transform_to_group(self.segs, trans)
+
+    def write_bounds_spec(self, fname, ):
+        '''
+        write in a consistent way the specification of an arena
+        to include the bounds and the transform.
+        '''
+        # construct spec dictionary
+        bs = {
+            'base_bl': self.bl_bound,
+            'base_tr': self.tr_bound,
+            'trans'  : {
+                'dx' : self.trans.dx,
+                'dy' : self.trans.dy,
+                'theta' : self.trans.theta,
+            },
+        }
+        # write it to yaml file
+        with open(fname, 'w') as f:
+            yaml.safe_dump(bs, f, default_flow_style=False)
+
+
 
     def transformed(self, trans):
         '''
