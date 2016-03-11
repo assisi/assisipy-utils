@@ -7,18 +7,23 @@ import argparse
 import random
 from assisipy_utils import arena
 from assisipy_utils.mgmt import specs
-import csv
+from assisipy_utils.arena import Transformation
+import yaml
 
+'''
 def find_reqs(fname):
     with open(fname) as f:
-        reader = csv.reader(f)
-        toprow = reader.next()
-        if len(toprow) == 4:
-            tr = [float(x) for x in toprow]
-            return [(tr[0], tr[1]), (tr[2], tr[3])]
-        else:
-            raise IOError
+        _d = yaml.safe_load(f)
+        bl_bound = _d.get('base_bl')
+        tr_bound = _d.get('base_tr')
+        dx = _d.get('trans').get('dx')
+        dy = _d.get('trans').get('dy')
+        theta = _d.get('trans').get('theta')
 
+    trans = Transformation(dx, dy, theta)
+
+    return (bl_bound, tr_bound, trans)
+'''
 
 
 if __name__ == '__main__':
@@ -29,7 +34,7 @@ if __name__ == '__main__':
     ''')
     parser.add_argument('-n',  '--num-bees', type=int, default=0)
     parser.add_argument('-ol', '--obj-listing', type=str, default=None)
-    parser.add_argument('-a', '--area-file', type=str, default='valid_area.csv')
+    parser.add_argument('-a', '--area-file', type=str, default='valid.arena')
     parser.add_argument('-l', '--label', type=str, default='popln1-')
     parser.add_argument('-e', '--exec-script', type=str, required=True,
                         help='name of script to execute for each bee in `bee-file`')
@@ -42,8 +47,9 @@ if __name__ == '__main__':
         obj_file = open(args.obj_listing, 'w')
 
     # find out where the bees can go
-    valid_area = find_reqs(args.area_file)
-    bee_poses = arena.gen_valid_bee_positions(valid_area, n=args.num_bees)
+    #valid_area = find_reqs(args.area_file)
+    bl, tr, trans =arena.find_reqs(args.area_file)
+    bee_poses = arena.gen_valid_bee_positions((bl, tr), n=args.num_bees, trans=trans)
 
     if args.num_bees > 0:
         for i, pts in enumerate(bee_poses):

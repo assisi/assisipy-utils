@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('-x', type=float, default=0.0)
     parser.add_argument('-y', type=float, default=0.0)
     parser.add_argument('-l', '--label', type=str, default='popln1-')
-    parser.add_argument('-o', '--output', type=str, default='valid_area.csv')
+    parser.add_argument('-o', '--output', type=str, default='valid.arena')
     args = parser.parse_args()
 
     # in the 9-CASU arena of V3 casus, the centres are 9cm apart, centred at 5
@@ -34,11 +34,9 @@ if __name__ == '__main__':
     A.transform(T)
     posns_to_write = [x for sublist in A.get_valid_zone() for x in sublist]
 
-    with open(args.output, 'w') as va_file:
-        s = ", ".join([str(x) for x in posns_to_write])
-        va_file.write(s + "\n")
-    va_file.close()
-    print "[I] wrote specification to {}".format(va_file.name)
+    A.write_bounds_spec(args.output)
+
+    print "[I] wrote specification to {}".format(args.output)
 
     # now we have a definition, we can spawn the wall segments
     simctrl = sim.Control()
