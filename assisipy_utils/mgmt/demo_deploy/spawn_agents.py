@@ -34,7 +34,7 @@ if __name__ == '__main__':
     ''')
     parser.add_argument('-n',  '--num-bees', type=int, default=0)
     parser.add_argument('-ol', '--obj-listing', type=str, default=None)
-    parser.add_argument('-a', '--area-file', type=str, default='valid.arena')
+    parser.add_argument('-a', '--arena-file', type=str, default='valid.arena')
     parser.add_argument('-l', '--label', type=str, default='popln1-')
     parser.add_argument('-e', '--exec-script', type=str, required=True,
                         help='name of script to execute for each bee in `bee-file`')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     # find out where the bees can go
     #valid_area = find_reqs(args.area_file)
-    bl, tr, trans =arena.find_reqs(args.area_file)
+    bl, tr, trans =arena.read_reqs(args.arena_file)
     bee_poses = arena.gen_valid_bee_positions((bl, tr), n=args.num_bees, trans=trans)
 
     if args.num_bees > 0:

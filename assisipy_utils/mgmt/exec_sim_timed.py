@@ -33,9 +33,11 @@ DO_EXEC = False
 DO_TEST = True
 #
 _C_OKBLUE =  '\033[94m'
+_C_OKGREEN = '\033[92m'
 _C_ENDC = '\033[0m'
 _C_WARNING = '\033[93m'
 _C_FAIL = '\033[91m'
+_C_TEST = '\033[2;32;40m'
 
 
 
@@ -103,9 +105,7 @@ class SimHandler(object):
         self.calib_timeout = int(self.config.get("calib_timeout", 20))
 
         # user scripts -- if not defined in conf file, this section will be skipped
-        self.TOOL_SPAWN_WALLS = self.config.get('spawn_wall_tool', None)
-        self.TOOL_SPAWN_AGENTS          = self.config.get("tool_spawn_agents", None)
-        self.TOOL_LAUNCH_AGENT_HANDLERS = self.config.get("tool_launch_agent_handlers", None)
+        self.TOOL_EXEC_AGENTS = self.config.get("tool_exec_agents", None)
 
         # other params we use to execute simulation
         self.project_root = os.path.dirname(os.path.abspath(self.conf_file))
@@ -167,7 +167,7 @@ class SimHandler(object):
         now = datetime.datetime.now()
         _bgs = ""
         if bg: _bgs = "&"
-        print "#[{}] {} $  {} {}".format(level, now.strftime("%H:%M:%S"), cmd, _bgs)
+        print _C_TEST + "#[{}] {} $  {} {}".format(level, now.strftime("%H:%M:%S"), cmd, _bgs) + _C_ENDC
         sys.stdout.flush()
     #}}}
 
@@ -203,10 +203,20 @@ class SimHandler(object):
         time.sleep(2.0)
 
         # we do walls here for each population
-        spwn_cmd = "{} ".format (self.TOOL_SPAWN_WALLS)
-        self.disp_cmd_to_exec(spwn_cmd)
-        p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
-        p2.wait()
+        for pop, data in self.config['agents'].items():
+            _ws = data.get('wall_spawner', None)
+            if _ws is None:
+                continue # skip to next population
+
+            arena_bounds_file = os.path.join(
+                self.logdir, "{}-arenalims.arena".format(pop))
+            data['arena_bounds_file'] = arena_bounds_file
+
+            spwn_cmd = "{} -l {} -o {}".format(_ws, pop, arena_bounds_file)
+            self.disp_cmd_to_exec(spwn_cmd)
+            p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
+            p2.wait()
+
 
         spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['PRJ_FILE'])
         self.disp_cmd_to_exec(spwn_casus)
@@ -258,38 +268,37 @@ class SimHandler(object):
         self.disp_cmd_to_exec("cd {}".format(wd),)
         os.chdir(wd)
 
+        # we spawn all the agents for here for each population (blocking)
+        for pop, data in self.config['agents'].items():
+            _as = data.get('spawner', None)
+            if _as is None:
+                continue # skip to next population
 
-        for _arena in ['top', 'bot']:
-            arena = "spawn_bees_{}.py".format(_arena)
-            spwn_cmd = "python scripts/{} -n {} -ip {} --logpath {}".format(
-                    arena, self.config['n_bees'], self.config['SIM_HOST_IP'],
-                    self.logdir)
+            obj_listing = os.path.join(self.logdir, "{}-listing.csv".format(pop))
+            spwn_cmd = "{} -l {} -ol {} -a {} -n {} -e {}".format(
+                _as, pop, obj_listing, data['arena_bounds_file'],
+                data['size'],
+                data['behav_script'],)
             self.disp_cmd_to_exec(spwn_cmd)
-            p2 = wrapped_subproc(DO_EXEC, spwn_cmd, stdout=subprocess.PIPE, shell=True)
+            data['obj_listing'] = obj_listing
+            p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
             p2.wait()
 
-        # nonblocking - run bees
-        bee_cmd = "python scripts/launch_bee_behaviours.py"
-        bee_cmd += " -e {} --logpath {}".format(
-                self.config['bee_behav_script'],
-                self.logdir,)
-        bee_top = bee_cmd + " -ol {}/bee_locations_top.csv".format(self.logdir,)
-        bee_bot = bee_cmd + " -ol {}/bee_locations_bot.csv".format(self.logdir,)
+        # execute all agent behaviour scripts
+        for pop, data in self.config['agents'].items():
+            _ab = data.get('behav_script', None)
+            if _ab is None:
+                continue # skip to next population
 
-        if 'top_bee_conf' in self.config:
-            bee_top += " -lc {}".format(self.config['top_bee_conf'])
-        if 'bot_bee_conf' in self.config:
-            bee_bot += " -lc {}".format(self.config['bot_bee_conf'])
+            #
+            agent_cmd = "{} -ol {} --logpath {}".format(
+                self.TOOL_EXEC_AGENTS, data['obj_listing'], self.logdir,)
+            self.disp_cmd_to_exec(agent_cmd, bg=True)
+            p1 = wrapped_subproc(DO_TEST, agent_cmd, stdout=subprocess.PIPE,
+                                 shell=True, preexec_fn=os.setsid)
+            self.p_handles.append(p1)
 
-        self.disp_cmd_to_exec(bee_bot, bg=True)
-        p1 = wrapped_subproc(DO_EXEC, bee_bot, stdout=subprocess.PIPE,
-                shell=True, preexec_fn=os.setsid)
-        self.p_handles.append(p1)
 
-        self.disp_cmd_to_exec(bee_top, bg=True)
-        p1 = wrapped_subproc(DO_EXEC, bee_top, stdout=subprocess.PIPE,
-                shell=True, preexec_fn=os.setsid)
-        self.p_handles.append(p1)
 
 
 
@@ -321,7 +330,7 @@ class SimHandler(object):
         os.chdir(wd)
 
         # A. run retreiver -- don't hide output
-        cll_cmd = "{} {} --logpath {}".format( self.TOOL_COLLECT_LOGS,
+        cll_cmd = "{} {} --logpath {}".format( self.
             self.config['PRJ_FILE'], self.logdir)
         p2 = wrapped_subproc(DO_EXEC, cll_cmd,
                 #stdout=subprocess.pipe, # allow stdout out
