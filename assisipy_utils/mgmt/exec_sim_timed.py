@@ -138,9 +138,9 @@ class SimHandler(object):
 
     def _setup_dirs(self):
         # set up all of the parts of a simulation before the main loop.
-        _ld = "{}{}_n{}_rpt{}".format(
+        _ld = "{}-{}_rpt{}".format(
                 self.config['PRJ_FILE'].split('.')[0],
-                self.label, self.config['n_bees'], self.rpt)
+                self.label, self.rpt)
         self.logdir = os.path.join(self.config['logbase'], _ld)
         self.disp_msg("mkdir {}".format(self.logdir))
         mkdir_p(self.logdir)
