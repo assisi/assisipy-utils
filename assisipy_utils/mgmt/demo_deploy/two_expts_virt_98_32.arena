@@ -1,0 +1,50 @@
+# config file for 2-casu x2, both pairs VIRTUAL casus
+# RM, Aug 2015.
+# 
+#  (only) REPEAT: V top, V bottom
+#  arena 1 has 9, 8 and is virtual
+#  arena 2 has 3, 2 and is virtual
+#
+# s/192.168.12.79/localhost/
+
+
+# tested only using teallach, IP localhost
+
+# arena 1 has 9, 8 and is VIRTUAL
+sim-sym_breaking_arena1:
+    # Casu names have to start with casu- in order for
+    # automatic spawning to work; they are also only
+    # allowed to contain letters, dashes and underscores
+    casu-sim-009 :
+        pose : {x : -9, y : +9, yaw : 0}
+        sub_addr : tcp://localhost:5555
+        pub_addr : tcp://localhost:5556
+        msg_addr : tcp://localhost:30209
+
+    casu-sim-008 :
+        pose : {x : -0, y : +9, yaw : 0}
+        sub_addr : tcp://localhost:5555
+        pub_addr : tcp://localhost:5556
+        msg_addr : tcp://localhost:30208
+
+#  arena 4 has 3, 2 and is virtual
+#  <WE RETAIN #4# so it is fewer changes -- the specific arena number is 
+#  irrelevant, only whether it corresponds; and whether it starts wtih 
+#  sim- or not>
+sim-sym_breaking_arena4:
+    # Casu names have to start with casu- in order for
+    # automatic spawning to work; they are also only
+    # allowed to contain letters, dashes and underscores
+    casu-sim-003 :
+        pose : {x : -9, y : -9, yaw : 0}
+        sub_addr : tcp://localhost:5555
+        pub_addr : tcp://localhost:5556
+        msg_addr : tcp://localhost:30203
+
+    casu-sim-002 :
+        pose : {x : -0, y : -9, yaw : 0}
+        sub_addr : tcp://localhost:5555
+        pub_addr : tcp://localhost:5556
+        msg_addr : tcp://localhost:30202
+
+

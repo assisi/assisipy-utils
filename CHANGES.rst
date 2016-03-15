@@ -1,10 +1,36 @@
 Change and release log
 ======================
 
-pre-0.3.1
----------
+0.4.0
+-----
+
+* added simulation execution manager, with facility for:
+
+    * spawning of agents and arena walls, by population
+    * execution of agent behaviours with utils.run_multiagent
+    * execution of CASU controllers with assisipy.deploy tools  
+    * collection of results 
+    * timed execution, with early interrupt via ctrl-c.
+    * logging of commandes
+
+* added example usage simulation execution manager
 
 * added example of heterogeneous behavioural controllers
+
+known issues:
+
+* exec_sim_timed.py:
+
+    * exit codes are not processed (success of various operations 
+      cannot be known since assisipy does not acknowledge, e.g. 
+      spawn of objects)
+    * non-local paths are not universally handled well
+    * config files for agent behaviour are not optional.
+    * planned feature: easily skip stages via config -- e.g. via
+      setting to None or undefined on tools, or declaring the stages
+      explicitly
+    * planned feature: dry-run, which checks that all files indicated 
+      are present, and permissions for relevant logpaths are allowed
 
 
 0.3.0

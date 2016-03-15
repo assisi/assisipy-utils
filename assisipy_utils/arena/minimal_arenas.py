@@ -1,9 +1,10 @@
 from math import pi, sin, cos
 import random
+import yaml
 
-#from assisipy_simtools.utils.maths_utils import linspace
-from transforms import Point #,trans_valid_area_to_rect
+from transforms import Point, Transformation
 from transforms import translate_point, find_ctr_seq, rotate_point_about_other
+from assisipy_utils.common.maths import linspace
 
 #{{{ arcs
 def create_arc_with_width(cx, cy, radius, theta_0=pi/2, theta_end=-pi/2,
@@ -100,18 +101,15 @@ def gen_valid_bee_positions(valid_area, n=1, theta_rng=(0, 2*pi), trans=None):
 #}}}
 
 
-''' written by Sven Marnach - reference:
-http://stackoverflow.com/questions/12334442/does-python-have-a-linspace-function-in-its-std-lib'''
-def linspace(start, stop, n):
-    '''
-    Returns a generator producing n points, equally spaced between
-    start and stop. Both endpoints are included.
-    '''
-    if n == 1:
-        yield stop
-        return
-    h = (stop - start) / (n - 1)
-    for i in range(n):
-        yield start + h * i
+def read_reqs(fname):
+    with open(fname) as f:
+        _d = yaml.safe_load(f)
+        bl_bound = _d.get('base_bl')
+        tr_bound = _d.get('base_tr')
+        dx = _d.get('trans').get('dx')
+        dy = _d.get('trans').get('dy')
+        theta = _d.get('trans').get('theta')
 
+    trans = Transformation(dx, dy, theta)
 
+    return (bl_bound, tr_bound, trans)

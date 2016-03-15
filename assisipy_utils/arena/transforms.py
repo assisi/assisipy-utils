@@ -172,11 +172,13 @@ class Transformation(object):
     to a transformation
     '''
     def __init__(self, dx=0, dy=0, theta=0):
-        self.dx      = dx
-        self.dy      = dy
-        self.theta = theta
+        self.dx      = float(dx)
+        self.dy      = float(dy)
+        self.theta   = float(theta)
 
     def __str__(self):
-        s =  "Transformation: Rotate by {{:{fmt}} and translate "
-        "by ({:{fmt}}, {:{fmt}})".format(self.theta, self.dx, self.dy)
+        s =  "Transformation: Rotate by {:{fmt}} and translate by ({:{fmt}}, {:{fmt}})".format(self.theta, self.dx, self.dy,
+                                         fmt='6.3f')
+        return s
+
 #}}}

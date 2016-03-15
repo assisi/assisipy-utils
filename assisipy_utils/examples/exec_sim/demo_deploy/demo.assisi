@@ -1,0 +1,11 @@
+# This file describes a deployment project
+
+# Arena description file -- not unique (shared for any expts using same casus)
+arena : virt_98.arena
+
+# Neighborhood graph -- not unique
+nbg : virt_98.nbg
+
+# Deployment specification -- UNIQUE
+dep : demo1.dep
+ 

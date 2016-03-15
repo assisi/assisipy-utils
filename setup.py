@@ -46,7 +46,8 @@ long_description = read('DESCRIPTION.rst')
 
 # setting up entry points to code within the python package - hopefully..
 console_scripts = [
-            ['run_multiagent = assisipy_utils.mgmt.run_multiagent:main'],
+    ['exec_sim_timed = assisipy_utils.mgmt.exec_sim_timed:main'],
+    ['run_multiagent = assisipy_utils.mgmt.run_multiagent:main'],
 ]
 
 
