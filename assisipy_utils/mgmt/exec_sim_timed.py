@@ -29,7 +29,7 @@ import yaml, os, argparse, sys, errno
 import subprocess, signal
 import datetime, time
 
-DO_EXEC = False
+DO_EXEC = True
 DO_TEST = True
 #
 _C_OKBLUE =  '\033[94m'
@@ -330,7 +330,7 @@ class SimHandler(object):
         os.chdir(wd)
 
         # A. run retreiver -- don't hide output
-        cll_cmd = "{} {} --logpath {}".format( self.
+        cll_cmd = "{} {} --logpath {}".format( self.TOOL_COLLECT_LOGS,
             self.config['PRJ_FILE'], self.logdir)
         p2 = wrapped_subproc(DO_EXEC, cll_cmd,
                 #stdout=subprocess.pipe, # allow stdout out
@@ -394,6 +394,9 @@ def main():
     hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
 
     os.chdir(cwd) # go back to original location
+    hdlr.disp_msg("------------- Simulation finished! -------------")
+    hdlr.disp_msg(_C_OKBLUE + "Results are in {}".format(hdlr.logdir) + _C_ENDC)
+    hdlr.disp_msg("------------- -------------------- -------------")
 
 if __name__ == '__main__':
    main()

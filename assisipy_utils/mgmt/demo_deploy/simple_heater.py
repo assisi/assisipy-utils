@@ -16,7 +16,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # connect to casu
-    c = casu.Casu(rtc_file_name=args.rtc)
+    c = casu.Casu(rtc_file_name=args.rtc, log=True)
     # set temperature
     if args.temp is None:
         c.temp_standby()
