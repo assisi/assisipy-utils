@@ -122,9 +122,11 @@ class SimHandler(object):
         # variables
         self.p_handles = []
         self.f_handles = []
+        self._cmd_idx = 0
 
         #
         self._setup_dirs()
+        self._setup_cmdlog()
     #}}}
 
     #{{{ process management
@@ -145,6 +147,17 @@ class SimHandler(object):
         self.disp_msg("mkdir {}".format(self.logdir))
         mkdir_p(self.logdir)
 
+    def _setup_cmdlog(self):
+        # open a logfile, for all commands executed to be entered.
+        # borrowed log format from casu
+        now_str = datetime.datetime.now().__str__().split('.')[0]
+        now_str = now_str.replace(' ','-').replace(':','-')
+
+        self._cmdlog = open(
+            os.path.join(self.logdir, "commands-{}.log".format(now_str)),
+            'w', 0 # bufsize=0 for unbuffered, =1 for line buffered)
+        )
+
     def close_active_processes(self, sig = signal.SIGINT):
         '''
         terminate all active process handles with the signal `sig`
@@ -155,6 +168,13 @@ class SimHandler(object):
             self.disp_msg("\t pgkill -{} {}".format(sig, p.pid))
             if p.pid is not None:
                 os.killpg(p.pid, sig)
+
+
+    def cd(self, pth):
+        ''' convenience wrapper for ch dir since used so frequently '''
+        self.disp_cmd_to_exec("cd {}".format(pth))
+        os.chdir(pth)
+
     #}}}
 
     #{{{ output funcs
@@ -167,8 +187,17 @@ class SimHandler(object):
         now = datetime.datetime.now()
         _bgs = ""
         if bg: _bgs = "&"
-        print _C_TEST + "#[{}] {} $  {} {}".format(level, now.strftime("%H:%M:%S"), cmd, _bgs) + _C_ENDC
+        cmd_str = "#[{}] {} {:3} $  {} {}".format(
+            level, now.strftime("%H:%M:%S"), self._cmd_idx, cmd, _bgs)
+        print _C_TEST + cmd_str + _C_ENDC
+        self._cmdlog.write(cmd_str + "\n")
+        #print _C_TEST + "#[{}] {} $  {} {}".format(level, now.strftime("%H:%M:%S"), cmd, _bgs) + _C_ENDC
         sys.stdout.flush()
+        self._cmd_idx += 1
+
+    def done(self):
+        if self._cmdlog is not None and self._cmdlog.closed is False:
+            self._cmdlog.close()
     #}}}
 
     #{{{ main stages of expt execution
@@ -187,19 +216,20 @@ class SimHandler(object):
         all p2 are blocking and no handles kept.
         '''
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
-        self.disp_cmd_to_exec("cd {}".format(wd),)
-        os.chdir(wd)
+        self.cd(wd)
 
         # non-blocking
         pg_cmd = "{}".format(self.TOOL_SIMULATOR)
         if self.pg_cfg_file is not None:
             pg_cmd += " -c {}".format(
             os.path.join(self.project_root, self.pg_cfg_file))
-        self.disp_cmd_to_exec(pg_cmd, )
+        self.disp_cmd_to_exec(pg_cmd, bg=True)
         p1 = wrapped_subproc(DO_TEST, pg_cmd, stdout=subprocess.PIPE,
                 shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
 
+        # sleep a bit for simulator to launch before attempting to connect to it
+        self.disp_cmd_to_exec("sleep {}".format(2.0))
         time.sleep(2.0)
 
         # we do walls here for each population
@@ -240,8 +270,7 @@ class SimHandler(object):
         Note: this stage also blocks for `calib_timeout`
         '''
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
-        self.disp_cmd_to_exec("cd {}".format(wd),)
-        os.chdir(wd)
+        self.cd(wd)
         # non-blocking
 
         casu_cmd = "{} {}".format(self.TOOL_CASU_EXEC, self.config['PRJ_FILE'])
@@ -265,8 +294,7 @@ class SimHandler(object):
         # this function does a bit more - it spawns the bees afterwards;
         # perhaps we should define spawn at a high level?
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
-        self.disp_cmd_to_exec("cd {}".format(wd),)
-        os.chdir(wd)
+        self.cd(wd)
 
         # we spawn all the agents for here for each population (blocking)
         for pop, data in self.config['agents'].items():
@@ -275,16 +303,18 @@ class SimHandler(object):
                 continue # skip to next population
 
             obj_listing = os.path.join(self.logdir, "{}-listing.csv".format(pop))
+            data['obj_listing'] = obj_listing
             spwn_cmd = "{} -l {} -ol {} -a {} -n {} -e {}".format(
                 _as, pop, obj_listing, data['arena_bounds_file'],
                 data['size'],
                 data['behav_script'],)
             self.disp_cmd_to_exec(spwn_cmd)
-            data['obj_listing'] = obj_listing
             p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
             p2.wait()
 
         # execute all agent behaviour scripts
+        wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
+        self.cd(wd)
         for pop, data in self.config['agents'].items():
             _ab = data.get('behav_script', None)
             if _ab is None:
@@ -326,12 +356,12 @@ class SimHandler(object):
         '''
         # 1. retrieve data / logs
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
-        self.disp_cmd_to_exec("cd {}".format(wd),)
-        os.chdir(wd)
+        self.cd(wd)
 
         # A. run retreiver -- don't hide output
         cll_cmd = "{} {} --logpath {}".format( self.TOOL_COLLECT_LOGS,
             self.config['PRJ_FILE'], self.logdir)
+        self.disp_cmd_to_exec(cll_cmd)
         p2 = wrapped_subproc(DO_EXEC, cll_cmd,
                 #stdout=subprocess.pipe, # allow stdout out
                 shell=True)
@@ -387,16 +417,15 @@ def main():
         hdlr.disp_msg("simln interrupted -- shutting down")
 
     hdlr.close_active_processes()
-
-
     hdlr.close_logs()
-
     hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
 
-    os.chdir(cwd) # go back to original location
+    hdlr.cd(cwd) # go back to original location
+
     hdlr.disp_msg("------------- Simulation finished! -------------")
     hdlr.disp_msg(_C_OKBLUE + "Results are in {}".format(hdlr.logdir) + _C_ENDC)
     hdlr.disp_msg("------------- -------------------- -------------")
+    hdlr.done()
 
 if __name__ == '__main__':
    main()
