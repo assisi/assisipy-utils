@@ -368,12 +368,12 @@ class SimHandler(object):
         p2.wait()
 
         # 2. check #files in log path
-        cmd = "find {} -type f | wc -l ".format(self.logdir)
-
-        lines = subprocess.check_output(cmd, shell=True).strip()
-        if verb: print lines
-        file_cnt = int(lines.split()[0])
         if expected_file_cnt is not None:
+            cmd = "find {} -type f | wc -l ".format(self.logdir)
+
+            lines = subprocess.check_output(cmd, shell=True).strip()
+            if verb: print lines
+            file_cnt = int(lines.split()[0])
             f_msg = "[WARNING; NOT ENUGH LOGFILES!]"
             if file_cnt >= expected_file_cnt: f_msg = "ok"
             self.disp_msg("There are {} files/dirs in {} ({})".format(file_cnt, self.logdir, f_msg))
