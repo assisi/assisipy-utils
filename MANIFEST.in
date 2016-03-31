@@ -4,4 +4,16 @@
 # compiling source distributions ("python setup.py sdist")
 # see, e.g., http://stackoverflow.com/a/1857436
 
-include DESCRIPTION.rst
+include DESCRIPTION.rst CHANGES.rst LICENSE README.md
+
+
+# now inclde the whole example directory
+recursive-include assisipy_utils/examples *
+#graft assisipy_utils/examples
+# set some exclusions 
+#recursive-exclude assisipy_utils *.py[co] .ropeproject
+recursive-exclude . .ropeproject .ropeproject/
+#global-exclude .ropeproject
+# hmm, the exclusion doesn't work very well, but the sdist creation is not too
+# important since we achieve the binary compilations via github anyway -- should
+# check how this works out with a manifest spec!

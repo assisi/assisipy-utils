@@ -2,12 +2,12 @@
 
 **What is it?** 
 
-Library of utilities for use with assisi-python and assisi-playground
+Library of utilities for use with [`assisi-python`](https://github.com/larics/assisi-python) and [`assisi-playground`](https://github.com/larics/assisi-playground) 
 
 
 **How to install**
 
-It is possible to use pip to install directly (without needing to download):
+It is possible to use pip to install directly (without needing to clone this repo):
 
     $ pip install --user git+https://github.com/assisi/assisipy-utils.git@v0.4.0     
 

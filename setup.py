@@ -88,9 +88,15 @@ setup(
     },
 
     #package_dir  = {'assisipy_utils' : 'assisipy_utils'},
-    package_data = {'assisipy_utils' : ['examples/*.py',
-                                   'examples/beeconf/*',
-                                   ], },
+    # removing spec from here to distribute the examples, since it is
+    # error-prone to specify all directories here. instead, the MANIFEST.in
+    # file is used (see http://stackoverflow.com/a/1857436)
+
+    #package_data = {'assisipy_utils' : [
+        #'examples/arena/*',
+        #'examples/beeconf/*',
+        #'examples/exec_sim/*',
+    #], },
 
 
 
