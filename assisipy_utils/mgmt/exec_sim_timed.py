@@ -38,7 +38,15 @@ _C_ENDC = '\033[0m'
 _C_WARNING = '\033[93m'
 _C_FAIL = '\033[91m'
 _C_TEST = '\033[2;32;40m'
+_C_ERR  = '\033[1;31m'
 
+
+SEVERITY = {
+    'I' : _C_OKBLUE,
+    'W' : _C_WARNING,
+    'F' : _C_FAIL,
+    'E' : _C_ERR,
+}
 
 
 #{{{ support funcs
@@ -178,9 +186,16 @@ class SimHandler(object):
     #}}}
 
     #{{{ output funcs
-    def disp_msg(self, msg, level='I'):
+    def disp_msg(self, msg, level='I', clr=True):
         now = datetime.datetime.now()
-        print "#[{}] {} > {}".format(level, now.strftime("%H:%M:%S"), msg)
+        if clr:
+            pre = SEVERITY.get(level, '')
+            post = _C_ENDC
+        else:
+            pre = ""
+            post = ""
+        print "#{}[{}]{} {} > {}{}{}".format(pre, level, post,
+            now.strftime("%H:%M:%S"), pre, msg, post)
         sys.stdout.flush()
 
     def disp_cmd_to_exec(self, cmd, level='I', verb=False, bg=False):
@@ -283,18 +298,20 @@ class SimHandler(object):
 
         self.disp_cmd_to_exec("sleep {}".format(self.calib_timeout))
         time.sleep(self.calib_timeout)
-        self.disp_msg("calibration done, ready to spawn bees")
+        self.disp_msg("calibration done, ready to spawn agents")
 
 
-    def run_agents(self, ):
+    def init_agents(self, ):
         '''
-        This assumes the requirement of spawning and executing all agents from
-        two populations. The exec is non-blocking.
+        This stage spawns agents from all populations as defined in config.
+        The spawning is blocking.
         '''
         # this function does a bit more - it spawns the bees afterwards;
         # perhaps we should define spawn at a high level?
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
         self.cd(wd)
+
+        spawn_count = 0
 
         # we spawn all the agents for here for each population (blocking)
         for pop, data in self.config['agents'].items():
@@ -302,23 +319,64 @@ class SimHandler(object):
             if _as is None:
                 continue # skip to next population
 
+            _ab_file = data.get('arena_bounds_file')
+            if _ab_file is None:
+                # without this file, the automatic spawner cannot proceed,
+                # but it is possible that assumptions are written-in somewhere
+                # so should allow for progress if this is really desired?
+                self.disp_msg( (_C_WARNING +
+                                """Missing arena bounds specification for popln
+                                {}.  Skipping spawning stage for {} agents.
+                                """.format(pop, data.get('size', -1)) + _C_ENDC ),
+                               level='W')
+                continue
+
+
             obj_listing = os.path.join(self.logdir, "{}-listing.csv".format(pop))
             data['obj_listing'] = obj_listing
             spwn_cmd = "{} -l {} -ol {} -a {} -n {} -e {}".format(
                 _as, pop, obj_listing, data['arena_bounds_file'],
                 data['size'],
-                data['behav_script'],)
+                data.get('behav_script', "None"),)
             self.disp_cmd_to_exec(spwn_cmd)
             p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
             p2.wait()
+            data['agents_spawned'] = True
+            spawn_count += 1
+
+        self.disp_msg("Agents spawned from {} populations. Ready to exec.".format(spawn_count))
+
+    def run_agents(self, ):
+        '''
+        This assumes the requirement of executing hanlders for all agents from
+        all populations. The exec is non-blocking.
+        '''
 
         # execute all agent behaviour scripts
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
         self.cd(wd)
         for pop, data in self.config['agents'].items():
             _ab = data.get('behav_script', None)
+            _spawned = data.get('agents_spawned', False)
             if _ab is None:
+                if _spawned:
+                    # emit a warning that this population will not be executed,
+                    # despite having been spawned
+                    self.disp_msg( """popln {} was spawned, but no behavioural
+                                  handler defined.  Check specification if this
+                                  is not desired.""".format(pop), level='W')
+
                 continue # skip to next population
+
+            if not _spawned:
+                # currently do not permit external spawners, so skip exec of this
+                # population, for any reason that the spawn has not happened.
+                self.disp_msg( (_C_WARNING +
+                                """popln {} was not spawned, so cannot guarantee
+                                that agents exist. Skipping behavioural handlers.
+                                """.format(pop) + _C_ENDC ),
+                               level='W')
+                continue
 
             #
             agent_cmd = "{} -ol {} --logpath {}".format(
@@ -408,7 +466,8 @@ def main():
     try:
         hdlr.pre_calib_setup() # initialise: playground, deploy, walls
         hdlr.calib_casus()     # connect and timeout calibration (blocking)
-        hdlr.run_agents()      # spawn agents and connect handlers
+        hdlr.init_agents()     # spawn agents
+        hdlr.run_agents()      # connect handlers to agents
         if args.verb:
             hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.pids))
 
