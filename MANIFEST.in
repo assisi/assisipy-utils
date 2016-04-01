@@ -17,3 +17,8 @@ recursive-exclude . .ropeproject .ropeproject/
 # hmm, the exclusion doesn't work very well, but the sdist creation is not too
 # important since we achieve the binary compilations via github anyway -- should
 # check how this works out with a manifest spec!
+#
+# hmm, it seems that with the code installs via pip+github, we lose out on the
+# examples.  The files are listed in the SOURCES.txt, but not transferred. 
+# Annoying, files defined in setup.py/package_data are transferred ok.
+# Will revisit the issue another time.
