@@ -154,6 +154,8 @@ class SimHandler(object):
         self.logdir = os.path.join(self.config['logbase'], _ld)
         self.disp_msg("mkdir {}".format(self.logdir))
         mkdir_p(self.logdir)
+        self.procdir = os.path.join(self.logdir, 'proc')
+        mkdir_p(self.procdir)
 
     def _setup_cmdlog(self):
         # open a logfile, for all commands executed to be entered.
@@ -166,16 +168,51 @@ class SimHandler(object):
             'w', 0 # bufsize=0 for unbuffered, =1 for line buffered)
         )
 
+    def _add_pid_file(self, p1):
+        '''
+        keep track of all pids started by a given simulation, in case of
+        crash, to know which processes to stop
+        '''
+        fn = os.path.join(self.procdir, "{}".format(p1.pid))
+        now_str = datetime.datetime.now().__str__().split('.')[0]
+        now_str = now_str.replace(' ','-').replace(':','-')
+        with open(fn, 'w') as f:
+            f.write("{}".format(now_str))
+
+        f.close()
+
+    def _remove_pid_file(self, p1):
+        '''
+        when we close a process, remove the pid file
+        '''
+        fn = os.path.join(self.procdir, "{}".format(p1.pid))
+        if os.path.exists(fn):
+            os.remove(fn)
+            self.disp_msg("removed PID file {}".format(p1.pid))
+        else:
+            self.disp_msg("could not remove PID file for proc {}".format(p1.pid), level='D')
+
+
+    # a bit of debug - write all active PIDs before closing them
+    def check_stillactive_pids(self):
+        raise  # TODO: implement! what was I working on...
+        pass
+
+
+
+
     def close_active_processes(self, sig = signal.SIGINT):
         '''
         terminate all active process handles with the signal `sig`
         '''
         self.disp_msg("Closing down persistent procs")
+        self.check_stillactive_pids()
 
         for p in self.p_handles:
             self.disp_msg("\t pgkill -{} {}".format(sig, p.pid))
             if p.pid is not None:
                 os.killpg(p.pid, sig)
+                self._remove_pid_file(p)
 
 
     def cd(self, pth):
@@ -242,6 +279,7 @@ class SimHandler(object):
         p1 = wrapped_subproc(DO_TEST, pg_cmd, stdout=subprocess.PIPE,
                 shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
+        self._add_pid_file(p1)
 
         # sleep a bit for simulator to launch before attempting to connect to it
         self.disp_cmd_to_exec("sleep {}".format(2.0))
@@ -294,6 +332,7 @@ class SimHandler(object):
         p1 = wrapped_subproc(DO_TEST,  casu_cmd, stdout=outf,
                 shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
+        self._add_pid_file(p1)
         self.f_handles.append(outf)
 
         self.disp_cmd_to_exec("sleep {}".format(self.calib_timeout))
@@ -385,6 +424,7 @@ class SimHandler(object):
             p1 = wrapped_subproc(DO_TEST, agent_cmd, stdout=subprocess.PIPE,
                                  shell=True, preexec_fn=os.setsid)
             self.p_handles.append(p1)
+            self._add_pid_file(p1)
 
 
 
@@ -474,6 +514,7 @@ def main():
         hdlr.wait_for_sim()    # main part to exec simulation
     except KeyboardInterrupt:
         hdlr.disp_msg("simln interrupted -- shutting down")
+
 
     hdlr.close_active_processes()
     hdlr.close_logs()
