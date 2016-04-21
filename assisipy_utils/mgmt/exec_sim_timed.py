@@ -195,8 +195,24 @@ class SimHandler(object):
 
     # a bit of debug - write all active PIDs before closing them
     def check_stillactive_pids(self):
-        raise  # TODO: implement! what was I working on...
-        pass
+        w_cnt = 0
+        pids = [p.pid for p in self.p_handles]
+        _s_p = " ".join([str(_p) for _p in pids])
+        self.disp_msg('Currently active processes are: {}'.format(_s_p))
+        for pid in pids:
+            # check whether there is a file corresponding to this still?
+            fn = os.path.join(self.procdir, "{}".format(pid))
+            if not os.path.exists(fn):
+                self.disp_msg("file for {} does not exist!".format(pid), level='W')
+                w_cnt += 1
+
+        if w_cnt >0:
+            self.disp_msg("{} problems encountered!".format(w_cnt), level='W')
+
+        return w_cnt
+
+
+
 
 
 
@@ -288,8 +304,21 @@ class SimHandler(object):
         # we do walls here for each population
         for pop, data in self.config['agents'].items():
             _ws = data.get('wall_spawner', None)
+            _spec = data.get('wall_spec', None)
             if _ws is None:
-                continue # skip to next population
+                if _spec is None: # nothing defined, OK but skip
+                    continue # skip to next population
+                else: # specfile defined, OK
+                    # we can continue, we just enter the spec into db. (another
+                    # popln or tool has (or will have) handled generating spec)
+
+                    data['arena_bounds_file'] = os.path.join(self.logdir, _spec)
+                    continue
+            else:
+                if _spec is not None: # BOTH defined -- clash
+                    raise RuntimeError, "[E] cannot proceed with BOTH a wall spawning progam and a specfile declared: conflicting config"
+                else: # spawner defined, specfile undef, OK, run it
+                    pass
 
             arena_bounds_file = os.path.join(
                 self.logdir, "{}-arenalims.arena".format(pop))
