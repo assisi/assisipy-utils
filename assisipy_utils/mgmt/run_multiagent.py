@@ -24,6 +24,7 @@ import argparse
 
 #from . import specs
 import specs
+import sys
 
 '''
 # The os.setsid() is passed in the argument preexec_fn so
@@ -38,11 +39,11 @@ os.killpg(pro.pid, signal.SIGTERM)  # Send the signal to all the process groups
 
 
 def main():
-    ''' execute the handler for all bees in the bee list '''
+    ''' execute the handler for all agents in one or many agent specification listings '''
     parser = argparse.ArgumentParser()
     # input
-    parser.add_argument('-ol', '--obj-listing', type=str, required=True,
-            help='file listing all objects spawned in enki simulator') # no default
+    parser.add_argument('-ol', '--obj-listing', type=str, required=True, nargs='+',
+            help='files listing all objects spawned in enki simulator (one or more)') # no default
     # output
     parser.add_argument('--logpath', type=str, required=True,
                         help="path to record output in")
@@ -55,18 +56,29 @@ def main():
     args = parser.parse_args()
 
 
-    # extract info from spec
-    agent_data = specs.read_agent_handler_data(args.obj_listing)
+    # extract info from specs
+    agent_data = []
+    for grp in args.obj_listing:
+        _ad = specs.read_agent_handler_data(grp)
+        agent_data += _ad
+    # check for duplicates (agents managed by their name)
+    a_names = [d.get('name') for d in agent_data ]
+    _longest = len( max(a_names, key=lambda p: len(p)) )
+
     # and summarise
     print "[I] {} agents to run:".format(
             len(agent_data), )
+    print "\t{:{fwid}} ({:4})  {:20} {:20}".format('agent',  'type', 'behav', 'config', fwid=_longest+1)
     for d in agent_data:
-        print "\t{:10} ({:6}): behav {:20} config {:20}".format(
+        print "\t{:{fwid}} ({:4}): {:20} {:20}".format(
             d.get('name'),
             d.get('type'),
             d.get('exec_script'),
             d.get('conf'),
+            fwid=_longest+1
         )
+    if len(a_names) != len(set(a_names)):
+        raise IOError, "[E] duplicates found in agent specification. aborting"
 
 
     # create/clear the "live output" log file
