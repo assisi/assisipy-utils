@@ -1,6 +1,13 @@
 Change and release log
 ======================
 
+0.5.0
+-----
+
+* agent handler execution script permits single or multiple specification files
+* sim manager allows external definition of spawning area, enabling one wall
+  spawner to serve multiple populations if required. 
+
 0.4.0
 -----
 
