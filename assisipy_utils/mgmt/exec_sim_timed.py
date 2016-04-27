@@ -421,8 +421,10 @@ class SimHandler(object):
         '''
 
         # execute all agent behaviour scripts
+        # first, gather all agents to be run
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
         self.cd(wd)
+        exec_listings = []
         for pop, data in self.config['agents'].items():
             _ab = data.get('behav_script', None)
             _spawned = data.get('agents_spawned', False)
@@ -447,8 +449,14 @@ class SimHandler(object):
                 continue
 
             #
+            exec_listings.append( data['obj_listing'])
+
+        # then run all with a single handler
+        if len(exec_listings):
+            _el = " ".join(str(_e) for _e in exec_listings)
             agent_cmd = "{} -ol {} --logpath {}".format(
-                self.TOOL_EXEC_AGENTS, data['obj_listing'], self.logdir,)
+                self.TOOL_EXEC_AGENTS, _el, self.logdir,)
+                #self.TOOL_EXEC_AGENTS, data['obj_listing'], self.logdir,)
             self.disp_cmd_to_exec(agent_cmd, bg=True)
             p1 = wrapped_subproc(DO_TEST, agent_cmd, stdout=subprocess.PIPE,
                                  shell=True, preexec_fn=os.setsid)
