@@ -46,7 +46,7 @@ if os.path.isfile(verfile):
 # provide the argparse info
 
 def ap_ver(parser=None):
-    print "in generator:", GIT_VERSION
+    #print "in generator:", GIT_VERSION
     elog = "tool version: {}".format(GIT_VERSION)
     if parser is None:
         parser = argparse.ArgumentParser(epilog=elog)

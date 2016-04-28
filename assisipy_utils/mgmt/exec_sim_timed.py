@@ -29,6 +29,8 @@ import yaml, os, argparse, sys, errno
 import subprocess, signal
 import datetime, time
 
+from assisipy_utils import tool_version
+
 DO_EXEC = True
 DO_TEST = True
 #
@@ -519,10 +521,11 @@ class SimHandler(object):
 
 def main():
     parser = argparse.ArgumentParser()
+    tool_version.ap_ver(parser) # attach package dev version to parser
     parser.add_argument('-c', '--conf', type=str, default=None, required=True)
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
-    parser.add_argument('-v', '--verb', type=int, default=0,)
+    parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
     #
 

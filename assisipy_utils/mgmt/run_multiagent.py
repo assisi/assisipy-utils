@@ -25,6 +25,7 @@ import argparse
 #from . import specs
 import specs
 import sys
+from assisipy_utils import tool_version
 
 '''
 # The os.setsid() is passed in the argument preexec_fn so
@@ -41,6 +42,7 @@ os.killpg(pro.pid, signal.SIGTERM)  # Send the signal to all the process groups
 def main():
     ''' execute the handler for all agents in one or many agent specification listings '''
     parser = argparse.ArgumentParser()
+    tool_version.ap_ver(parser)
     # input
     parser.add_argument('-ol', '--obj-listing', type=str, required=True, nargs='+',
             help='files listing all objects spawned in enki simulator (one or more)') # no default
