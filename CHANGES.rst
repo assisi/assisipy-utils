@@ -4,9 +4,25 @@ Change and release log
 0.5.0
 -----
 
-* agent handler execution script permits single or multiple specification files
-* sim manager allows external definition of spawning area, enabling one wall
-  spawner to serve multiple populations if required. 
+* run_multiagent agent handler improvements:
+   
+    * agent handler execution script permits single or multiple specification
+      files
+    * minor improvements to output formatting
+
+* exec_sim_timed.py sim manager improvments:
+
+    * allows external definition of spawning area, enabling one wall spawner to
+      serve multiple populations if required. 
+    * better skipping of stages that are detected not to have sufficient info
+      to proceed 
+    * additional stage to separate init_agents from run_agents
+    * process ID management improved
+    * improved coloring of log entries to screen
+
+* tools have git-derived sub-version when in development mode (better
+  traceability); this falls back to the package version with regular install.
+
 
 0.4.0
 -----

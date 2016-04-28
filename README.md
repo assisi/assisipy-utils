@@ -9,7 +9,7 @@ Library of utilities for use with [`assisi-python`](https://github.com/larics/as
 
 It is possible to use pip to install directly (without needing to clone this repo):
 
-    $ pip install --user git+https://github.com/assisi/assisipy-utils.git@v0.4.0     
+    $ pip install --user git+https://github.com/assisi/assisipy-utils.git@v0.5.0     
 
 Note that `pip` installs scripts to `~/.local/bin` and if this is not already
 on your path you will need to add it, for instance in your `.bashrc` file:
