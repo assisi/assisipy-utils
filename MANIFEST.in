@@ -5,6 +5,7 @@
 # see, e.g., http://stackoverflow.com/a/1857436
 
 include DESCRIPTION.rst CHANGES.rst LICENSE README.md
+#include assisipy_utils/common/dev_version.txt
 
 
 # now inclde the whole example directory

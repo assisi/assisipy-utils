@@ -92,6 +92,12 @@ setup(
     # error-prone to specify all directories here. instead, the MANIFEST.in
     # file is used (see http://stackoverflow.com/a/1857436)
 
+    # despite defining a file in manifest.in, it does not get as far as
+    # the install, so now defining this file here. Horivel...
+    package_data = {'assisipy_utils' : [
+        'common/dev_version.txt',
+    ], },
+
     #package_data = {'assisipy_utils' : [
         #'examples/arena/*',
         #'examples/beeconf/*',
