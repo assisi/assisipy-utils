@@ -26,6 +26,7 @@ Major parts of code following Aug 2015 setup
 '''
 
 import yaml, os, argparse, sys, errno
+import shutil
 import subprocess, signal
 import datetime, time
 
@@ -237,6 +238,15 @@ class SimHandler(object):
         ''' convenience wrapper for ch dir since used so frequently '''
         self.disp_cmd_to_exec("cd {}".format(pth))
         os.chdir(pth)
+
+    def mkdir(self, pth):
+        ''' convenience wrapper to ensure mkdirs are logged '''
+        self.disp_cmd_to_exec("mkdir -p {}".format(pth))
+        mkdir_p(pth)
+
+    def copyfile(self, src, dest):
+        self.disp_cmd_to_exec("cp -p {} {}".format(src, dest))
+        shutil.copy2(src, dest)
 
     #}}}
 
@@ -452,6 +462,18 @@ class SimHandler(object):
 
             #
             exec_listings.append( data['obj_listing'])
+            # any archives then put into log folder
+            self.archdir = os.path.join(self.logdir, 'archive')
+            self.mkdir(self.archdir)
+            _archs = data.get('archives', [])
+            for f in _archs:
+                pth = os.path.join(self.archdir, pop)
+                self.mkdir(pth)
+                self.copyfile(f, pth)
+
+
+
+
 
         # then run all with a single handler
         if len(exec_listings):
