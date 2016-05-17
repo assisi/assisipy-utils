@@ -128,6 +128,8 @@ class SimHandler(object):
         self.TOOL_DEPLOY       = "deploy.py"
         self.TOOL_COLLECT_LOGS = "collect_data.py"
 
+        self.ARCHIVE_BEHAV_SCRIPT = True
+        self.ARCHIVE_SPAWNER      = True
 
 
         # variables
@@ -159,6 +161,8 @@ class SimHandler(object):
         mkdir_p(self.logdir)
         self.procdir = os.path.join(self.logdir, 'proc')
         mkdir_p(self.procdir)
+        self.archdir = os.path.join(self.logdir, 'archive')
+        mkdir_p(self.archdir)
 
     def _setup_cmdlog(self):
         # open a logfile, for all commands executed to be entered.
@@ -341,11 +345,24 @@ class SimHandler(object):
             p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
             p2.wait()
 
+            if self.ARCHIVE_SPAWNER and _ws is not None:
+                if os.path.isfile(_ws):
+                    pth = os.path.join(self.archdir, pop)
+                    self.mkdir(pth)
+                    self.copyfile(_ws, pth)
 
-        spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['PRJ_FILE'])
-        self.disp_cmd_to_exec(spwn_casus)
-        p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
-        p2.wait()
+        #spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['PRJ_FILE'])
+        # TODO: until PR#39 is accepted, this needs to give the .arena file!
+        a_file = None
+        with open(self.config['PRJ_FILE']) as project_file:
+            project = yaml.safe_load(project_file)
+            a_file = project.get('arena', None)
+
+        if a_file is not None:
+            spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, a_file)
+            self.disp_cmd_to_exec(spwn_casus)
+            p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
+            p2.wait()
 
         dply_cmd = "{} {}".format(self.TOOL_DEPLOY, self.config['PRJ_FILE'])
         self.disp_cmd_to_exec(dply_cmd)
@@ -463,9 +480,9 @@ class SimHandler(object):
             #
             exec_listings.append( data['obj_listing'])
             # any archives then put into log folder
-            self.archdir = os.path.join(self.logdir, 'archive')
-            self.mkdir(self.archdir)
             _archs = data.get('archives', [])
+            if self.ARCHIVE_BEHAV_SCRIPT:
+                _archs += [_ab]
             for f in _archs:
                 pth = os.path.join(self.archdir, pop)
                 self.mkdir(pth)
