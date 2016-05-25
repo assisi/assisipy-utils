@@ -1,6 +1,26 @@
 Change and release log
 ======================
 
+0.6.0
+-----
+
+* exec_sim_timed.py sim manager improvments:
+
+  * archiving source or config files
+  
+* mgmt/specs:
+
+  * implemented a yaml-based agent handler data reader and writer (with 
+    the same interface as the csv-based version, but files are more readable
+    and also extensible in the case that more information is required by 
+    alternative processes)  
+
+Known issues:
+
+* the few initial commands (e.g. mkdir) cannot be logged because the logfile is not 
+  yet created - catch22 between mkdir(log) and openfile(log/cmdlog).
+
+
 0.5.0
 -----
 
