@@ -20,6 +20,9 @@ Known issues:
 * the few initial commands (e.g. mkdir) cannot be logged because the logfile is not 
   yet created - catch22 between mkdir(log) and openfile(log/cmdlog).
 
+* if a key is undefined in the yaml specwriter, it is written (& read) as the 
+  string 'null', and not as a None.  Strip out any invalid key/value pairs at 
+  generation time; consider whether defaults at read time are wise.
 
 0.5.0
 -----
