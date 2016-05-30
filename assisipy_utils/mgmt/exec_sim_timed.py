@@ -135,7 +135,9 @@ class SimHandler(object):
         # variables
         self.p_handles = []
         self.f_handles = []
+
         self._cmd_idx = 0
+        self._pre_cmdlog = [] # store any commands before log is opened
 
         #
         self._setup_dirs()
@@ -157,12 +159,11 @@ class SimHandler(object):
                 self.config['PRJ_FILE'].split('.')[0],
                 self.label, self.rpt)
         self.logdir = os.path.join(self.config['logbase'], _ld)
-        self.disp_msg("mkdir {}".format(self.logdir))
-        mkdir_p(self.logdir)
+        self.mkdir(self.logdir, prestore=True)
         self.procdir = os.path.join(self.logdir, 'proc')
-        mkdir_p(self.procdir)
+        self.mkdir(self.procdir, prestore=True)
         self.archdir = os.path.join(self.logdir, 'archive')
-        mkdir_p(self.archdir)
+        self.mkdir(self.archdir, prestore=True)
 
     def _setup_cmdlog(self):
         # open a logfile, for all commands executed to be entered.
@@ -174,6 +175,8 @@ class SimHandler(object):
             os.path.join(self.logdir, "commands-{}.log".format(now_str)),
             'w', 0 # bufsize=0 for unbuffered, =1 for line buffered)
         )
+        for cmd_str in self._pre_cmdlog:
+            self._cmdlog.write(cmd_str + "\n")
 
     def _add_pid_file(self, p1):
         '''
@@ -243,9 +246,9 @@ class SimHandler(object):
         self.disp_cmd_to_exec("cd {}".format(pth))
         os.chdir(pth)
 
-    def mkdir(self, pth):
+    def mkdir(self, pth, prestore=False):
         ''' convenience wrapper to ensure mkdirs are logged '''
-        self.disp_cmd_to_exec("mkdir -p {}".format(pth))
+        self.disp_cmd_to_exec("mkdir -p {}".format(pth), prestore=prestore)
         mkdir_p(pth)
 
     def copyfile(self, src, dest):
@@ -267,16 +270,19 @@ class SimHandler(object):
             now.strftime("%H:%M:%S"), pre, msg, post)
         sys.stdout.flush()
 
-    def disp_cmd_to_exec(self, cmd, level='I', verb=False, bg=False):
+    def disp_cmd_to_exec(self, cmd, level='I', verb=False, bg=False, prestore=False):
         now = datetime.datetime.now()
         _bgs = ""
         if bg: _bgs = "&"
         cmd_str = "#[{}] {} {:3} $  {} {}".format(
             level, now.strftime("%H:%M:%S"), self._cmd_idx, cmd, _bgs)
         print _C_TEST + cmd_str + _C_ENDC
-        self._cmdlog.write(cmd_str + "\n")
-        #print _C_TEST + "#[{}] {} $  {} {}".format(level, now.strftime("%H:%M:%S"), cmd, _bgs) + _C_ENDC
-        sys.stdout.flush()
+        if prestore:
+            self._pre_cmdlog.append(cmd_str)
+        else:
+            self._cmdlog.write(cmd_str + "\n")
+            #print _C_TEST + "#[{}] {} $  {} {}".format(level, now.strftime("%H:%M:%S"), cmd, _bgs) + _C_ENDC
+            sys.stdout.flush()
         self._cmd_idx += 1
 
     def done(self):
