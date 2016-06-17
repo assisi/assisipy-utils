@@ -16,6 +16,14 @@ Change and release log
     and also extensible in the case that more information is required by 
     alternative processes)  
 
+* arena:
+
+  * implemented RoundedRectArena, similar to the stadium but more general since
+    there can be a flat section on the L/R walls as well as the T/B walls if
+    desired
+  * included simple rendering helpers for drawing components in matplotlib
+    (as opposed to spawning in the playground)
+
 Known issues:
 
 * if a key is undefined in the yaml specwriter, it is written (& read) as the 
