@@ -278,6 +278,107 @@ class RoundedRectArena(BaseArena):
         self.tr_bound = (n_x + poly_wh[2].x - k, n_y + poly_wh[1].y - k )
 
 #}}}
+#{{{ RoundedRectBarrier
+class RoundedRectBarrier(BaseArena):
+    def __init__(self, width=6.0, length=16.0, arc_steps=9, ww=1.0,
+                 corner_rad=1.5, bee_len=1.5, edges=['n','e','s','w'],
+                 **kwargs):
+        '''
+        A barrier that is a subset of the RoundedRect.
+
+        Specify from [n,e,s,w] edges. Appropriate corners are retained.
+
+        '''
+        # TODO: consolidate all shared code with roundedrectArena if possible.
+        super(RoundedRectBarrier, self).__init__(ww=ww, **kwargs)
+        self.width = width
+        self.length = length
+
+        if (corner_rad > width / 2.0 or corner_rad > length/2.0):
+            raise ValueError("[E] cannot construct arena with bigger corners than either dimension")
+
+
+        # compute geometry
+        l_horiz_seg = length - (2.0 * corner_rad)
+        l_verti_seg = width  - (2.0 * corner_rad)
+        # shorthands
+        lhz = l_horiz_seg
+        lvt = l_verti_seg
+
+        wall_horiz  = ( (-lhz/2.0, -ww/2.0), (+lhz/2.0, -ww/2.0),
+                    (+lhz/2.0, +ww/2.0), (-lhz/2.0, +ww/2.0),
+                    (-lhz/2.0, -ww/2.0))
+        wall_verti  = (
+            (-ww/2.0, -lvt/2.0), # 1
+            (+ww/2.0, -lvt/2.0), # 4
+            (+ww/2.0, +lvt/2.0), # 3
+            (-ww/2.0, +lvt/2.0), # 2
+            (-ww/2.0, -lvt/2.0), # 1
+        )
+
+
+        poly_wh = [Point(x, y, 0) for (x, y) in wall_horiz]
+        poly_wv = [Point(x, y, 0) for (x, y) in wall_verti]
+
+
+        # create polygons for the two long/parallel walls
+        s = [(0,  -width/2.0+ww/2.0,     0),          poly_wh]
+        n = [(0,  +width/2.0-ww/2.0,     0),          poly_wh]
+
+        w = [(-length/2.0+ww/2.0, 0,    0),          poly_wv]
+        e = [(+length/2.0-ww/2.0, 0,    0),          poly_wv]
+        polys = []
+        if 'e' in edges: polys.append(e)
+        if 'n' in edges: polys.append(n)
+        if 'w' in edges: polys.append(w)
+        if 's' in edges: polys.append(s)
+
+        # now we need an arc for each corner
+        ww2 = ww/2.0
+        arc_tl = create_arc_with_width(cx=-lhz/2.0+ww2, cy=+lvt/2.0-ww2,
+                                       radius=corner_rad, theta_0=pi/2.0,
+                                       theta_end=pi, width=ww)
+        arc_tr = create_arc_with_width(cx=+lhz/2.0-ww2, cy=+lvt/2.0-ww2,
+                                       radius=corner_rad, theta_0=pi/2.0,
+                                       theta_end=0, width=ww)
+        arc_bl = create_arc_with_width(cx=-lhz/2.0+ww2, cy=-lvt/2.0+ww2,
+                                       radius=corner_rad, theta_0=pi,
+                                       theta_end=1.5*pi, width=ww)
+
+        arc_br = create_arc_with_width(cx=+lhz/2.0-ww2, cy=-lvt/2.0+ww2,
+                                       radius=corner_rad, theta_0=0,
+                                       theta_end=-pi/2.0, width=ww)
+
+        # compile a list of segments
+        segs = []
+        for origin, poly in polys:
+            # create relevant polygon with correct offset/position
+            (xo, yo, theta) = origin
+            ctr = Point(poly[0].x, poly[0].y) # rotate segment about its bottom left corner
+            seg = rotate_polygon(poly, ctr, theta) # do the rotation
+            seg = translate_seq(seg, dx=xo, dy=yo) # now translate the segment
+            segs.append(seg)
+
+        if 'e' in edges and 'n' in edges: segs += arc_tr
+        if 'e' in edges and 's' in edges: segs += arc_br
+        if 'w' in edges and 'n' in edges: segs += arc_tl
+        if 'w' in edges and 's' in edges: segs += arc_bl
+
+        self.segs = segs
+
+        ### compute the bounds within which agent bees can be spawned ###
+        # for simplicity, we assume that the valid zone is only between the
+        # parallel section, since random generation with curved bounds is likely
+        # going to be a pain (unless we do generate & test - then have to write
+        # something to do a 'hit test')
+        k = bee_len /2.0 # don't allow bees to be spawned in the wall
+
+        s_x, s_y, s_yaw = s[0]
+        n_x, n_y, n_yaw = n[0]
+        self.bl_bound = (s_x + poly_wh[0].x + k, s_y + poly_wh[3].y + k )
+        self.tr_bound = (n_x + poly_wh[2].x - k, n_y + poly_wh[1].y - k )
+
+#}}}
 
 #{{{ CircleArena
 class CircleArena(BaseArena):
