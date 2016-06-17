@@ -10,7 +10,7 @@ This initialiser sets up the most useful parts of the interface.
 '''
 
 
-from constructors import StadiumArena, CircleArena
+from constructors import StadiumArena, CircleArena, RoundedRectArena
 from transforms import Transformation
 from minimal_arenas import gen_valid_bee_positions, read_reqs
 
