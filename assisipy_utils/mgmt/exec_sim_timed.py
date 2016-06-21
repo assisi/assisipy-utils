@@ -291,6 +291,7 @@ class SimHandler(object):
     #}}}
 
     #{{{ main stages of expt execution
+    #{{{ sim -only version for pre_calib_setup
     def pre_calib_setup(self, ):
         '''
         This stage involves
@@ -370,6 +371,37 @@ class SimHandler(object):
             p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
             p2.wait()
 
+        self.deploy()
+
+        self.disp_msg("pre-calib setup complete.")
+    #}}}
+    #{{{ phys-only version for pre_calib_setup
+    def phys_pre_calib_setup(self, ):
+        '''
+        This stage involves
+        - (check the CASUs exist? check timing of CASUs login via ntp?)
+        - deploying code to the CASUs (this transfers, does not start exec)
+
+        '''
+
+        '''
+        All p1 are nonblockign and returned
+        all p2 are blocking and no handles kept.
+        '''
+        # we do walls here for each population
+        if 'agents' in self.config:
+            for pop, data in self.config['agents'].items():
+                raise RuntimeError, "[E] not expecting any simulated components!"
+
+        self.deploy()
+        self.disp_msg("pre-calib setup complete.")
+    #}}}
+
+    def deploy(self):
+        '''
+        '''
+        wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
+        self.cd(wd)
         dply_cmd = "{} {}".format(self.TOOL_DEPLOY, self.config['PRJ_FILE'])
         self.disp_cmd_to_exec(dply_cmd)
         p2 = wrapped_subproc(DO_TEST, dply_cmd, stdout=subprocess.PIPE, shell=True)
@@ -521,6 +553,15 @@ class SimHandler(object):
         self.disp_msg("running simulation now,  {}s".format(self.sim_sec), level='W')
         time.sleep(self.sim_sec)
         self.disp_msg("simln done", level='W')
+
+    def wait_for_expt(self):
+        '''
+        blocking wait for the period defined in config.
+        '''
+        #TODO: consolidate with wait_for_sim
+        self.disp_msg("running experiment now,  {}s".format(self.sim_sec), level='W')
+        time.sleep(self.sim_sec)
+        self.disp_msg("experiment done", level='W')
 
 
     def close_logs(self):
