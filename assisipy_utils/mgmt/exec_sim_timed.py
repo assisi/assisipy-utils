@@ -142,6 +142,8 @@ class SimHandler(object):
         #
         self._setup_dirs()
         self._setup_cmdlog()
+
+        self._arch_depconf()
     #}}}
 
     #{{{ process management
@@ -222,7 +224,31 @@ class SimHandler(object):
         return w_cnt
 
 
+    def _arch_depconf(self):
+        '''
+        copy all of the config files from deployment into the archive
+        '''
 
+        self._deparchdir = os.path.join(self.archdir, 'dep')
+        self.mkdir(self._deparchdir)
+        files = []
+
+        pf = os.path.join(self.project_root, self.config['DEPLOY_DIR'], self.config['PRJ_FILE'])
+
+        with open(pf) as project_file:
+            project = yaml.safe_load(project_file)
+            for key in ['arena', 'dep', 'nbg']:
+                _f = project.get(key, None)
+                if _f is not None:
+                    src = os.path.join(self.project_root, self.config['DEPLOY_DIR'], _f)
+                    files.append(src)
+
+
+        for f in [self.conf_file, pf] + files :
+            if os.path.exists(f):
+                self.copyfile(f, dest=self._deparchdir)
+            else:
+                print "[W] skipping {} since does not exist".format(f)
 
 
 
