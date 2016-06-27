@@ -13,6 +13,8 @@ import argparse
 import specs
 from assisipy_utils import tool_version
 from assisipy import sim
+import random
+from math import pi, sin, cos
 
 def main():
     ''' execute the handler for all agents in one or many agent specification listings '''
@@ -22,9 +24,19 @@ def main():
             help='files listing all objects spawned in enki simulator (one or more)') # no default
     parser.add_argument('-sa', '--sub-addr', type=str, default="tcp://127.0.0.1:5555")
     parser.add_argument('-pa', '--pub-addr', type=str, default="tcp://127.0.0.1:5556")
+    parser.add_argument('-x', type=float, default=None,
+                        help='override x,y,r to reset popln to random positions in a circle given by x,y, radius')
+    parser.add_argument('-y', type=float, default=None,
+                        help='override x,y,r to reset popln to random positions in a circle given by x,y, radius')
+    parser.add_argument('-r', type=float, default=None,
+                        help='override x,y,r to reset popln to random positions in a circle given by x,y, radius')
+
     tool_version.ap_ver(parser) # attach package dev version to parser
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
+    override_pos = False
+    if args.x is not None and args.y is not None and args.r is not None:
+        override_pos = True
 
     # extract info from specs
     agent_data = []
@@ -47,7 +59,18 @@ def main():
                 fwid=_longest+1
             )
             #print type(d.get('pose')) # seems ok
-            simctrl.teleport(d.get('name'), d.get('pose'))
+            if override_pos:
+                _r = args.r * random.random()
+                theta = 2*pi * random.random()
+                x = _r * cos(theta)
+                y = _r * sin(theta)
+                yaw = theta
+                pose = (x,y,yaw)
+
+            else:
+                pose = d.get('pose')
+
+            simctrl.teleport(d.get('name'), pose)
 
     return agent_data
 
