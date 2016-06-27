@@ -62,8 +62,8 @@ def main():
             if override_pos:
                 _r = args.r * random.random()
                 theta = 2*pi * random.random()
-                x = _r * cos(theta)
-                y = _r * sin(theta)
+                x = _r * cos(theta) + args.x
+                y = _r * sin(theta) + args.y
                 yaw = theta
                 pose = (x,y,yaw)
 
