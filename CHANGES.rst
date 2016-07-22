@@ -16,12 +16,24 @@ Change and release log
     and also extensible in the case that more information is required by 
     alternative processes)  
 
+  * added `exec_phys_timed`, a script that manages physical-only experiments.
+    These are far simpler than a simulated run, since no agents/walls/simulator
+    are spawned. It handles the deployment toolsuite, archiving of results, and
+    experiment length. It is installed as a script.
+
+  * added `cmdlog.sh`, a simple script to strip off meta-info on command logs,
+    to ease re-running of an experiment from the log
+
+  * added `reset_popln` to facilitate moving all agents back to their
+    originally-specified positions. This is useful in interactive modelling
+    (casus, or agents, or both)
+
 * arena:
 
   * implemented RoundedRectArena, similar to the stadium but more general since
     there can be a flat section on the L/R walls as well as the T/B walls if
     desired
-  * included simple rendering helpers for drawing components in matplotlib
+  * included simple rendering helpers for drawing components in `matplotlib`
     (as opposed to spawning in the playground)
 
 Known issues:
@@ -29,6 +41,7 @@ Known issues:
 * if a key is undefined in the yaml specwriter, it is written (& read) as the 
   string 'null', and not as a None.  Strip out any invalid key/value pairs at 
   generation time; consider whether defaults at read time are wise.
+
 
 0.5.0
 -----
