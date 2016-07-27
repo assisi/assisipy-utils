@@ -105,6 +105,7 @@ class SimHandler(object):
         self.label = label
         self.conf_file   = conf_file
         self.rpt         = rpt
+        self.expt_type   = "simulation"
 
         # parse config file
         with open(self.conf_file) as _f:
@@ -570,24 +571,17 @@ class SimHandler(object):
 
 
 
-
-
     def wait_for_sim(self):
         '''
         blocking wait for the period defined in config.
         '''
-        self.disp_msg("running simulation now,  {}s".format(self.sim_sec), level='W')
-        time.sleep(self.sim_sec)
-        self.disp_msg("simln done", level='W')
 
-    def wait_for_expt(self):
-        '''
-        blocking wait for the period defined in config.
-        '''
-        #TODO: consolidate with wait_for_sim
-        self.disp_msg("running experiment now,  {}s".format(self.sim_sec), level='W')
+        now = datetime.datetime.now()
+        fin = now + datetime.timedelta(0, self.sim_sec)
+        self.disp_msg("running {} now,  for {}s. Expect completion at {}".format(
+            self.expt_type, self.sim_sec, fin.strftime("%H:%M:%S") ), level='W')
         time.sleep(self.sim_sec)
-        self.disp_msg("experiment done", level='W')
+        self.disp_msg("{} done".format(self.expt_type), level='W')
 
 
     def close_logs(self):

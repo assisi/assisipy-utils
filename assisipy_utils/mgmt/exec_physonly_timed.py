@@ -38,6 +38,7 @@ def main():
 
     cwd = os.getcwd()
     hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,)
+    hdlr.expt_type = "experiment"
 
     try:
         hdlr.phys_pre_calib_setup() # initialise - jst deployment and checks
