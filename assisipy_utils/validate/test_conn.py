@@ -14,7 +14,7 @@ This works locally, creating a sandbox
 import yaml
 
 import argparse
-import os, sys
+import os, sys, inspect
 import shutil
 
 import pygraphviz as pgv
@@ -43,6 +43,9 @@ class TestCommConfig(object):
         # save where we are before any changes, because cd is destructive
         # see http://stackoverflow.com/q/24323731
         self.scriptdir = os.path.abspath(os.path.dirname(sys.argv[0])) # see http://stackoverflow.com/a/27414086
+        # we get in problems if we are using pip/entry points - use inspect
+        self.moduledir = os.path.abspath(os.path.dirname(
+            inspect.getfile(main)))
         self.prepared = False
         if self.TESTLINK:
             self.test_controller = "msg_test.py"
@@ -73,6 +76,8 @@ class TestCommConfig(object):
 
     #{{{ prep_commtest
     def prep(self):
+        print "=" * 75
+        print "--- Preparing deployment config for commtest ---"
         self.prep_commtest()
         self.prepared = True
 
@@ -84,7 +89,6 @@ class TestCommConfig(object):
         cwd = os.getcwd()
         print('Changing directory to {0}'.format(self.project_root))
         os.chdir(self.project_root)
-        print('Preparing commtest deployment config!')
 
         # Clean up and create new sandbox folder
         sandbox_path = os.path.join(self.project_root, self.sandbox_dir)
@@ -168,7 +172,10 @@ class TestCommConfig(object):
         #print "src to dest: \n\t{} \n\t{}".format(src, dst)
         shutil.copy2(src, dst)
 
-        src = os.path.join( self.scriptdir, self.test_controller)
+        src = os.path.join( self.moduledir, self.test_controller)
+        #print "src to dest: \n\t{} \n\t{}".format(src, dst)
+        #print "scriptdir: ", self.scriptdir
+        #print "moduledir: ", self.moduledir
         shutil.copy2(src, dst)
         #}}}
 
@@ -183,6 +190,8 @@ class TestCommConfig(object):
         - are all msg_addrs unique?
         - do all of the terminals exist?  [not sure whether this is a problem for earlier stage?]
         '''
+        print "\n" +  "=" * 75
+        print "--- offline checks on specification ---"
         self._unique_msg_addrs()
         self._unique_link_labels()
         self._generate_msg_links()
@@ -295,9 +304,9 @@ class TestCommConfig(object):
     def showcmds(self, annotate):
         # simulation needs - simulator, sim.py deploy, assisirun.py
         print "\n" + "="*75
-        print "[I] execute these commands to run full test and graph results"
+        print "--- execute these commands to run full test and graph results ---"
         print "    (skip simulator and sim.py stages if using only physical casus)"
-        print " "*4 + "-"*64
+        print "--- " + "-"*63
 
         print "cd {}".format(os.path.join(self.project_root, self.sandbox_dir))
         print "assisi_playground &"
