@@ -1,6 +1,32 @@
 Change and release log
 ======================
 
+0.7.0
+-----
+
+New implementations
+
+* added a graph class (and tool) that combines topological and geometric info
+  (from nbg and arena files) to produce a new output graph.  The class is 
+  extensible and can be used in validation procedures, such as to annotate 
+  edges that have had successful message transmissions detected.  Some are 
+  provided in the `assisipy_utils.validate` module.
+
+* added validator of a deployment specification: this tool generates a new 
+  deployment based on an existing deployment spec, that performs simple 
+  flashing and messaging tests on the deployment targets, and by means of 
+  logfiles it also validates the success or failure of each individual test.
+
+
+
+Issues resolved
+
+* 
+
+New known bugs
+
+* 
+
 0.6.0
 -----
 
