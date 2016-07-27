@@ -29,10 +29,6 @@ class TopoGeomGraph(object):
         self.project_root = os.path.dirname(os.path.abspath(project))
         self.scale = scale
 
-        if outfile is None:
-            self.outfile = "{}.layout".format(os.path.join(self.project_root, self.gf))
-        else:
-            self.outfile = outfile
         self._phys_layout_loaded = False
 
         # the arena file has locations
@@ -41,6 +37,10 @@ class TopoGeomGraph(object):
         self.gf = self.project_spec.get('nbg')
         self.nbg = os.path.join(self.project_root, self.gf)
 
+        if outfile is None:
+            self.outfile = "{}.layout".format(os.path.join(self.project_root, self.gf))
+        else:
+            self.outfile = outfile
         if self.af is None or self.gf is None:
             raise RuntimeError(
                 "[F] cannot annotate graph without both arena and nbg data!")

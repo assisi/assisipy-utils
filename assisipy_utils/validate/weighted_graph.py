@@ -29,17 +29,7 @@ if __name__ == "__main__":
                                  outfile=args.outfile)
 
     # annotate graph with edge weights.
-    for edge in TGG.DG.edges():
-        w = edge.attr.get('weight')
-        if w is None:
-            # no wieght info, nothing to do.
-            continue
-
-        # construct a compact label, including the weight
-        l_orig = edge.attr.get('label', "")
-        l_new  = "{} : {}".format(l_orig, w)
-        edge.attr['label'] = l_new
-
+    validate.compact_weight_labels(TGG.DG)
 
     # generate new graph, with extra info.
     TGG.write()
