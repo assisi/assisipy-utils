@@ -12,8 +12,7 @@ from assisipy_utils import validate
 import argparse
 
 
-
-if __name__ == "__main__":
+def main():
     #{{{ cmd line args
     parser = argparse.ArgumentParser(
         description="simple tool to augment a .nbg file with labels, "
@@ -48,3 +47,5 @@ if __name__ == "__main__":
     # generate new graph, with extra info.
     TGG.write()
 
+if __name__ == "__main__":
+    main()

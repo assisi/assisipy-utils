@@ -319,7 +319,7 @@ class TestCommConfig(object):
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
             print 'find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep -v ^# > {}'.format(datadir, "{}", msg_file)
-            print "show_conntest_results.py {} -m {}".format(self.out_project_file, msg_file)
+            print "show_assisi_dep_test {} -m {}".format(self.out_project_file, msg_file)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
             print "neato -Tpdf {}.layout > results_{}.pdf".format(
