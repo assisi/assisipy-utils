@@ -51,6 +51,7 @@ console_scripts = [
     ['run_multiagent  = assisipy_utils.mgmt.run_multiagent:main'],
     ['test_assisi_dep = assisipy_utils.validate.test_conn:main'],
     ['show_assisi_dep_test = assisipy_utils.validate.show_conntest_results:main'],
+    ['assisi_stop_all = assisipy_utils.mgmt.stopper:main']
 ]
 
 

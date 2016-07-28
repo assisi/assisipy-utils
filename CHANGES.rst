@@ -17,11 +17,15 @@ New implementations
   flashing and messaging tests on the deployment targets, and by means of 
   logfiles it also validates the success or failure of each individual test.
 
+* added `assisi_stop_all`, a script to call casu.stop() on all casus in a 
+  deployment. (including with --layer restrictions if desired).  A simple way
+  to clean up after an experiment, if for any reason it did not complete 
+  gracefully.  
 
 
 Issues resolved
 
-* 
+* #9 fixed: enhanced information relating to experiment runtime
 
 New known bugs
 
