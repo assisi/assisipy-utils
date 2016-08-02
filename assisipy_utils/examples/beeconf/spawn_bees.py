@@ -27,6 +27,7 @@ if __name__ == '__main__':
     obj_file = None
     if args.obj_listing is not None:
         obj_file = open(args.obj_listing, 'w')
+        specs.write_header(obj_file)
 
     if args.num_bees > 0:
         for i in range(1, args.num_bees+1):

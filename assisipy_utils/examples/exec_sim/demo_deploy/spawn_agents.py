@@ -1,30 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from math import pi
+#from math import pi
 from assisipy import sim
 import argparse
-import random
+#import random
 from assisipy_utils import arena
 from assisipy_utils.mgmt import specs
-from assisipy_utils.arena import Transformation
-import yaml
-
-'''
-def find_reqs(fname):
-    with open(fname) as f:
-        _d = yaml.safe_load(f)
-        bl_bound = _d.get('base_bl')
-        tr_bound = _d.get('base_tr')
-        dx = _d.get('trans').get('dx')
-        dy = _d.get('trans').get('dy')
-        theta = _d.get('trans').get('theta')
-
-    trans = Transformation(dx, dy, theta)
-
-    return (bl_bound, tr_bound, trans)
-'''
-
+#from assisipy_utils.arena import Transformation
+#import yaml
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=
@@ -45,9 +29,9 @@ if __name__ == '__main__':
     obj_file = None
     if args.obj_listing is not None:
         obj_file = open(args.obj_listing, 'w')
+        specs.write_header(obj_file)
 
     # find out where the bees can go
-    #valid_area = find_reqs(args.area_file)
     bl, tr, trans =arena.read_reqs(args.arena_file)
     bee_poses = arena.gen_valid_bee_positions((bl, tr), n=args.num_bees, trans=trans)
 

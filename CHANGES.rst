@@ -26,8 +26,9 @@ New implementations
 Issues resolved
 
 * #9 fixed: enhanced information relating to experiment runtime
-* #7 fixed: multiple arenas automatically receive unique names, even if no label
-            is supplied by user (provided generated in the same python instance)
+* #7 fixed: multiple arenas automatically receive unique names, even if no
+  label is supplied by user (provided generated in the same python instance)
+* #11 fixed: automatic parsing of agent specification file types
 
 
 New known bugs

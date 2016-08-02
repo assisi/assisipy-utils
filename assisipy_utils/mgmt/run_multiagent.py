@@ -59,7 +59,7 @@ def main():
     # extract info from specs
     agent_data = []
     for grp in args.obj_listing:
-        _ad = specs.read_agent_handler_data_yaml(grp)
+        _ad = specs.read_agent_handler_data(grp)
         agent_data += _ad
     # check for duplicates (agents managed by their name)
     a_names = [d.get('name') for d in agent_data ]

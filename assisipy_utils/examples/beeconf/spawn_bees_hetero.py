@@ -27,6 +27,7 @@ if __name__ == '__main__':
     obj_file = None
     if args.obj_listing is not None:
         obj_file = open(args.obj_listing, 'w')
+        specs.write_header(obj_file)
 
     if args.num_bees > 0:
         for i in range(1, args.num_bees+1):
@@ -45,9 +46,7 @@ if __name__ == '__main__':
             pose = (random.uniform(-4, 4), random.uniform(-4, 4),
                     2*pi*random.random())
 
-            simctrl.spawn('Bee', name, pose)
-            print 'Spawned bee', name
-            if obj_file:
+            if obj_file: # write specification to file for easy exec mgmt
                 s = specs.gen_spec_str(name, 'Bee', pose,
                                        exec_script, conf,
                                        'tcp://localhost:5556',
@@ -55,6 +54,10 @@ if __name__ == '__main__':
                                        )
 
                 obj_file.write(s + "\n")
+
+            simctrl.spawn('Bee', name, pose)
+            print 'Spawned bee', name
+
 
 
     A = arena.CircleArena(radius=args.radius)
