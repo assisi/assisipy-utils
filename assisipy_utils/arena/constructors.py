@@ -17,6 +17,7 @@ from transforms import rotate_polygon, translate_seq, apply_transform_to_group, 
 
 from minimal_arenas import create_arc_with_width
 import yaml
+import itertools
 
 
 ORIGIN = (0, 0, 0)
@@ -24,6 +25,7 @@ ORIGIN = (0, 0, 0)
 
 #{{{ Base class
 class BaseArena(object):
+    inst_id = itertools.count().next
     def __init__(self, ww=1.0, **kwargs):
 
         self.ww = ww
@@ -34,7 +36,8 @@ class BaseArena(object):
 
         self.segs = []
         self.color      = kwargs.get('color', (0.5, 0.5, 0.5))
-        self.label_stub = kwargs.get('label_stub', 'arena')
+        label_default   = "arena-{}".format(BaseArena.inst_id())
+        self.label_stub = kwargs.get('label_stub', label_default)
         self.height     = kwargs.get('height', 1.0)
 
     # not much point in getter/setter is there
@@ -101,6 +104,8 @@ class BaseArena(object):
         for i, poly in enumerate(self.segs):
             label = "{}-{:03d}".format(self.label_stub, i+offset)
             pts = xy_from_seq(poly)
+            if verb:
+                print "[I] attempting to spawn segment {}".format(label)
 
             self._spawn_polygon(simctrl, pts, label, height=self.height, color=self.color)
 
