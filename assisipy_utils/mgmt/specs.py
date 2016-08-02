@@ -16,6 +16,58 @@ They are recorded in CSV form, with one line per agent. The spec includes:
 import yaml
 import csv
 import copy
+from datetime import datetime as dt
+from itertools import ifilter
+
+
+def read_agent_handler_data(fname, ty_filter=None, verb=False):
+    '''
+    read specification as written, in either yaml or csv.
+    this function parses the first line to find the format and
+    then calls the specific reader.
+
+    returns a list of dicts, each dict having the following:
+        name
+        ty
+        pose
+        pa
+        sa
+        exec_script
+        local_conf
+    '''
+    # read header
+    header = ""
+
+    with open(fname, 'r') as f:
+        header = f.readline()
+
+    # now parse it
+    # expecting to see something like "# yaml, ver 1, created on date X"
+    fmt = None
+    if header.startswith('#'):
+        elems = [e.strip() for e in header.lstrip('#').split(",")]
+        if len(elems) >= 2:
+            fmt = elems[0]
+
+    if fmt is None:
+        print "[E] data format is unknown. write header correctly or use specific reader"
+        raise ValueError
+
+    if fmt == "yaml":
+        return read_agent_handler_data_yaml(fname, ty_filter=ty_filter, verb=verb)
+    elif fmt == "csv":
+        return read_agent_handler_data_csv(fname, ty_filter=ty_filter, verb=verb)
+    else:
+        print "[E] data format '{}' is not recognised! yaml and csv understood.".format(fmt)
+        raise ValueError
+
+
+
+
+
+
+
+
 
 def read_agent_handler_data_yaml(fname, ty_filter=None, verb=False):
     '''
@@ -49,7 +101,7 @@ def read_agent_handler_data_yaml(fname, ty_filter=None, verb=False):
 
     return data
 
-def read_agent_handler_data(fname, ty_filter=None, verb=False):
+def read_agent_handler_data_csv(fname, ty_filter=None, verb=False):
     '''
     uses specification parser that is maintained with writer!
     (which provides structured data)
@@ -69,8 +121,10 @@ def read_agent_handler_data(fname, ty_filter=None, verb=False):
     # first read whole file
     _specs = []
     with open(fname, 'r') as fh:
-        R = csv.reader(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL,
-                skipinitialspace=True)
+        R = csv.reader(
+            ifilter(lambda row: row[0]!='#', fh),
+            delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL,
+            skipinitialspace=True)
         for row in R:
             if len(row) != 9:
                 print "[W] incomplete specification."
@@ -96,7 +150,8 @@ def read_agent_handler_data(fname, ty_filter=None, verb=False):
     return data
 
 
-def gen_spec_str(name, obj_type, pose, exec_script, conf,
+
+def gen_spec_str_csv(name, obj_type, pose, exec_script, conf,
                   pub_addr='tcp://localhost:5556',
                   sub_addr='tcp://localhost:5555',
                   ):
@@ -119,6 +174,36 @@ def write_spec_file(fname, speclist ):
         for s in speclist:
             f.write(s+"\n")
     # done
+
+def write_header(f, fmt='latest', ver=2.0):
+    '''
+    write a simple header to spec file, to allow for easy automatic
+    processing of the type.
+    '''
+    now = dt.now()
+    _fmt = "yaml"
+    if fmt is 'latest':
+        _fmt = "yaml"
+    else:
+        _fmt = fmt
+
+    f.write("# {}, version {}, spec written at {}\n".format(
+        _fmt, ver, now.strftime("%c")))
+
+def gen_spec_str(name, obj_type, pose, exec_script, conf,
+                  pub_addr='tcp://localhost:5556',
+                  sub_addr='tcp://localhost:5555',
+                  ):
+    '''
+    wrapper for the yaml generator, which is the default since v0.6.
+
+    generate a specification string for an agent. returns a string -- does not
+    write directly to file
+
+    '''
+    return gen_spec_str_yaml(name, obj_type, pose, exec_script, conf,
+                             pub_addr=pub_addr, sub_addr=sub_addr)
+
 
 def gen_spec_str_yaml(name, obj_type, pose, exec_script, conf,
                   pub_addr='tcp://localhost:5556',
