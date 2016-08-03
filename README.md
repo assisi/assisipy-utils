@@ -34,4 +34,9 @@ See the examples directory for illustrations of:
    * with heterogeneous parameters
    * with heterogeneous controller programs
 
+New tools, as yet without example usage, include:
+
+* stopping all running CASUs easily
+* validation of CASU and link specifications visually and by log
+* graph augmentation / generation based on deployment specifications
 
