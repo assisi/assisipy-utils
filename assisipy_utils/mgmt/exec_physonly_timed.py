@@ -32,12 +32,14 @@ def main():
     parser.add_argument('-c', '--conf', type=str, default=None, required=True)
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
+    parser.add_argument('--allow-overwrite', action='store_true')
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
     #
 
     cwd = os.getcwd()
-    hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,)
+    hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
+                      allow_overwrite=args.allow_overwrite)
     hdlr.expt_type = "experiment"
 
     try:

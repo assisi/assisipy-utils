@@ -106,6 +106,8 @@ class SimHandler(object):
         self.conf_file   = conf_file
         self.rpt         = rpt
         self.expt_type   = "simulation"
+        self.allow_overwrite = kwargs.get('allow_overwrite', False)
+
 
         # parse config file
         with open(self.conf_file) as _f:
@@ -140,7 +142,8 @@ class SimHandler(object):
         self._cmd_idx = 0
         self._pre_cmdlog = [] # store any commands before log is opened
 
-        #
+        # check whether the logdir exists already
+        self._check_and_mk_logdir()
         self._setup_dirs()
         self._setup_cmdlog()
 
@@ -156,12 +159,31 @@ class SimHandler(object):
         pids = [_p.pid for _p in self.p_handles]
         return pids
 
-    def _setup_dirs(self):
-        # set up all of the parts of a simulation before the main loop.
+    def _check_and_mk_logdir(self):
         _ld = "{}-{}_rpt{}".format(
                 self.config['PRJ_FILE'].split('.')[0],
                 self.label, self.rpt)
-        self.logdir = os.path.join(self.config['logbase'], _ld)
+        logdir = os.path.join(self.config['logbase'], _ld)
+
+        if os.path.exists(logdir):
+            if not self.allow_overwrite:
+                msg = _C_FAIL + "[F] logpath already exists." + _C_ENDC
+                msg += "\n\t{}".format(logdir)
+                msg += _C_FAIL + "\nconsider the --allow-overwrite option if you meant to reuse the path" + _C_ENDC
+
+                raise RuntimeError(msg)
+            else: # emit an info message that we are overwriting path.
+                msg = "re-using path {} since --allow-overwrite is enabled".format(logdir)
+                self.disp_msg(msg)
+
+        # if it doesn't exist, or --allow-overwrite is set, proceed with this
+        # as the logdir
+        self.logdir = logdir
+
+
+
+    def _setup_dirs(self):
+        # set up all of the parts of a simulation before the main loop.
         self.mkdir(self.logdir, prestore=True)
         self.procdir = os.path.join(self.logdir, 'proc')
         self.mkdir(self.procdir, prestore=True)
@@ -631,6 +653,7 @@ def main():
     parser.add_argument('-c', '--conf', type=str, default=None, required=True)
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
+    parser.add_argument('--allow-overwrite', action='store_true')
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
     #
@@ -647,7 +670,8 @@ def main():
 
 
     cwd = os.getcwd()
-    hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,)
+    hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
+                      allow_overwrite=args.allow_overwrite)
 
     try:
         hdlr.pre_calib_setup() # initialise: playground, deploy, walls

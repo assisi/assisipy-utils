@@ -29,11 +29,7 @@ Issues resolved
 * #7 fixed: multiple arenas automatically receive unique names, even if no
   label is supplied by user (provided generated in the same python instance)
 * #11 fixed: automatic parsing of agent specification file types
-
-
-New known bugs
-
-* 
+* #10 fixed: prevent overwriting of log files (unless explicitly requested)
 
 0.6.0
 -----
