@@ -591,7 +591,9 @@ class SimHandler(object):
             self.p_handles.append(p1)
             self._add_pid_file(p1)
 
-
+    def wait_for_expt(self):
+        ''' logical rename for other non-simulation based users of this class'''
+        self.wait_for_sim()
 
     def wait_for_sim(self):
         '''

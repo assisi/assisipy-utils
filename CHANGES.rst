@@ -1,6 +1,15 @@
 Change and release log
 ======================
 
+0.7.1
+-----
+
+Issues resolved
+
+* #12: missing class function implemented
+
+
+
 0.7.0
 -----
 
