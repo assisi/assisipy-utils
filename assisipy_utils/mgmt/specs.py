@@ -18,6 +18,7 @@ import csv
 import copy
 from datetime import datetime as dt
 from itertools import ifilter
+from exec_sim_timed import _C_ENDC, _C_FAIL
 
 
 def read_agent_handler_data(fname, ty_filter=None, verb=False):
@@ -50,16 +51,16 @@ def read_agent_handler_data(fname, ty_filter=None, verb=False):
             fmt = elems[0]
 
     if fmt is None:
-        print "[E] data format is unknown. write header correctly or use specific reader"
-        raise ValueError
+        msg = _C_FAIL + "[E] data format is unknown. write header correctly or use specific reader" + _C_ENDC
+        raise ValueError(msg)
 
     if fmt == "yaml":
         return read_agent_handler_data_yaml(fname, ty_filter=ty_filter, verb=verb)
     elif fmt == "csv":
         return read_agent_handler_data_csv(fname, ty_filter=ty_filter, verb=verb)
     else:
-        print "[E] data format '{}' is not recognised! yaml and csv understood.".format(fmt)
-        raise ValueError
+        print _C_FAIL + "[E] data format '{}' is not recognised! yaml and csv understood.".format(fmt) + _C_ENDC
+        raise ValueError(msg)
 
 
 
