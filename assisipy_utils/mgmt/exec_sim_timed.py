@@ -108,6 +108,8 @@ class SimHandler(object):
         self.expt_type   = "simulation"
         self.allow_overwrite = kwargs.get('allow_overwrite', False)
 
+        self._deployed = False
+        self._expt_run = False
 
         # parse config file
         with open(self.conf_file) as _f:
@@ -121,6 +123,7 @@ class SimHandler(object):
         # user scripts -- if not defined in conf file, this section will be skipped
         self.TOOL_EXEC_AGENTS = self.config.get("tool_exec_agents", None)
 
+        self._setup_archives()
         # other params we use to execute simulation
         self.project_root = os.path.dirname(os.path.abspath(self.conf_file))
 
@@ -148,6 +151,20 @@ class SimHandler(object):
         self._setup_cmdlog()
 
         self._arch_depconf()
+
+    def _setup_archives(self):
+        # default is to archive all, for now
+        # but anything in config can override
+        self.selected_archives = {
+            'deploy_sandbox' : True,
+            #'' : True
+        }
+
+        cfg_arch = self.config.get('archives', {})
+        for ctg, v in cfg_arch.iteritems():
+            self.selected_archives[ctg] = v
+
+
     #}}}
 
     #{{{ process management
@@ -247,6 +264,26 @@ class SimHandler(object):
         return w_cnt
 
 
+    def _arch_dep_sandbox(self):
+        '''
+        copy the sandbox made by deploy tool into archive.
+        '''
+        if self._deployed:
+            depdir = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
+            prj_name = os.path.splitext(os.path.basename(self.config['PRJ_FILE']))[0]
+            sandbox_dir = prj_name + '_sandbox'
+            src = os.path.join(depdir, sandbox_dir)
+            dst = os.path.join(self.archdir, sandbox_dir)
+            #print "[I] will copy from {} to {}  ".format(src, dst)
+            self.copytree(src, dst)
+        else:
+            print "[W] called at a bad time."
+
+
+        #self._deparchdir = os.path.join(self.archdir, 'dep')
+    #defcopytree(self, src, dst, symlinks=False, ignore=None)
+        pass
+
     def _arch_depconf(self):
         '''
         copy all of the config files from deployment into the archive
@@ -303,6 +340,23 @@ class SimHandler(object):
     def copyfile(self, src, dest):
         self.disp_cmd_to_exec("cp -p {} {}".format(src, dest))
         shutil.copy2(src, dest)
+
+    def copytree(self, src, dst, symlinks=False, ignore=None):
+        ''' copy a directory, recursively'''
+        self.disp_cmd_to_exec("cp -pr {} {}".format(src, dst))
+        # see http://stackoverflow.com/a/12514470
+        for item in os.listdir(src):
+            s = os.path.join(src, item)
+            d = os.path.join(dst, item)
+            if os.path.isdir(s):
+                try:
+                    shutil.copytree(s, d, symlinks, ignore)
+                except (shutil.Error, OSError) as e:
+                    self.disp_msg("problem with copying tree {} to {} \n\t{}".format(src, dst, e), level='W')
+                    pass
+            else:
+                shutil.copy2(s, d)
+
 
     #}}}
 
@@ -456,8 +510,11 @@ class SimHandler(object):
         p2 = wrapped_subproc(DO_TEST, dply_cmd, stdout=subprocess.PIPE, shell=True)
         p2.wait()
 
+        self._deployed = True
 
-        self.disp_msg("pre-calib setup complete.")
+        self.disp_msg("deployment complete.")
+        if self.selected_archives.get('deploy_sandbox', False):
+            self._arch_dep_sandbox()
         pass
 
     def calib_casus(self):
