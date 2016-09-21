@@ -428,7 +428,9 @@ class SimHandler(object):
         time.sleep(2.0)
 
         # we do walls here for each population
-        for pop, data in self.config['agents'].items():
+        _ag_data = self.config.get('agents', {})
+        for pop, data in _ag_data.items():
+        #for pop, data in self.config['agents'].items():
             _ws = data.get('wall_spawner', None)
             _spec = data.get('wall_spec', None)
             if _ws is None:
@@ -555,7 +557,9 @@ class SimHandler(object):
         spawn_count = 0
 
         # we spawn all the agents for here for each population (blocking)
-        for pop, data in self.config['agents'].items():
+        _ag_data = self.config.get('agents', {})
+        for pop, data in _ag_data.items():
+        #for pop, data in self.config['agents'].items():
             _as = data.get('spawner', None)
             if _as is None:
                 continue # skip to next population
@@ -598,7 +602,8 @@ class SimHandler(object):
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
         self.cd(wd)
         exec_listings = []
-        for pop, data in self.config['agents'].items():
+        _ag_data = self.config.get('agents', {})
+        for pop, data in _ag_data.items():
             _ab = data.get('behav_script', None)
             _spawned = data.get('agents_spawned', False)
             if _ab is None:
