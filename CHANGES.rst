@@ -1,13 +1,21 @@
 Change and release log
 ======================
 
+0.7.2
+-----
+
+New features
+
+* deployment sandbox is archived (optionally)
+* validation for input files specified begun
+  (this is a component of a dry-run but not done in the same way)
+
 0.7.1
 -----
 
 Issues resolved
 
 * #12: missing class function implemented
-
 
 
 0.7.0
