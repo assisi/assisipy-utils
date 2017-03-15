@@ -29,6 +29,7 @@ import yaml, os, argparse, sys, errno
 import shutil
 import subprocess, signal
 import datetime, time
+import mgmt_utils as utils
 
 from assisipy_utils import tool_version
 
@@ -50,6 +51,13 @@ SEVERITY = {
     'F' : _C_FAIL,
     'E' : _C_ERR,
 }
+
+# checks
+CHECK_FAILED_FATAL = 1
+CHECK_FAILED_WARN  = 3
+CHECK_OK = 0
+
+
 
 
 #{{{ support funcs
@@ -81,18 +89,42 @@ def wrapped_subproc(do=True, *args, **kwargs):
 
     return p1
 
-def mkdir_p(path):
-    '''
-    emulate 'mkdir -p' -
-     create dir recursively; if the path exists, don't error
-    '''
-    try:
-        os.makedirs(path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else: raise
 
+def check_files_exist(file_dict, report=False):
+    '''
+    support function that checks whether files exist
+    expects a dictionary, with files as keys; works in place
+    returns number of errors/missing files.
+    '''
+    # mark all as untested
+    for fname in file_dict.keys():
+        file_dict[fname] = False
+
+    # test whether each one exists.
+    for fname in file_dict.keys():
+        exists = os.path.isfile(fname)
+        file_dict[fname] = bool(exists)
+
+
+    # report all that are missing.
+    e = 0
+    for fname, ex in file_dict.iteritems():
+        _s = ""
+        if report:
+            _s += "   [I] {:1} ==> {}".format( int(exists), fname)
+        if ex is False:
+            #fname = os.path.realpath(os.path.join(pth, fi))
+            _s = _C_ERR + "[E] {} does not exist".format(fname) + _C_ENDC
+            e += 1
+        if len(_s): print _s
+
+    if report:
+        if e > 0:
+            print "[E] {} of {} files missing.".format(e, len(file_dict))
+        #else:
+        #    print "[I] {} files specified, all exist.".format(len(file_dict))
+
+    return e
 
 #}}}
 
@@ -100,6 +132,13 @@ def mkdir_p(path):
 class SimHandler(object):
     #{{{ initialiser
     def __init__(self, conf_file, label, rpt, **kwargs):
+        '''
+        dry-run does the following:
+            - generates all sandboxes as if to run all (specified) programs
+            - test that all source files exist
+            - verify the logdir is writeable
+
+        '''
 
         # store params
         self.label = label
@@ -107,6 +146,7 @@ class SimHandler(object):
         self.rpt         = rpt
         self.expt_type   = "simulation"
         self.allow_overwrite = kwargs.get('allow_overwrite', False)
+        self.dry_run = kwargs.get('dry_run', False)
 
         self._deployed = False
         self._expt_run = False
@@ -123,11 +163,7 @@ class SimHandler(object):
         # user scripts -- if not defined in conf file, this section will be skipped
         self.TOOL_EXEC_AGENTS = self.config.get("tool_exec_agents", None)
 
-        self._setup_archives()
-        # other params we use to execute simulation
-        self.project_root = os.path.dirname(os.path.abspath(self.conf_file))
-
-        # define tools
+        # define tools - hard-coded!!! TODO: supply from where?
         self.TOOL_CASU_EXEC    = 'assisirun.py'
         self.TOOL_SIMULATOR    = "assisi_playground"
         self.TOOL_CASU_SPAWN   = "sim.py"
@@ -136,6 +172,29 @@ class SimHandler(object):
 
         self.ARCHIVE_BEHAV_SCRIPT = True
         self.ARCHIVE_SPAWNER      = True
+
+        self.project_root = os.path.dirname(os.path.abspath(self.conf_file))
+
+        # branch ere:
+        # 1. if dry-run, then we just check files exist etc
+        # 2. otherwise, create archives, logfiles, etc
+        if self.dry_run:
+            r = self.check_deployment_exists()
+            # parse the dep file itself. (.nbg and .arena files don't specify other files)
+            self.validate_depfile(True)
+
+            # check existence of tools(?) and args
+            self.check_tools_exist(report=True)
+            self.check_toolargs_exist(report=True)
+            self.check_agent_tools(report=True)
+
+            # not sure how to exit the initialiser?
+            return
+
+
+        self._setup_archives()
+        # other params we use to execute simulation
+
 
 
         # variables
@@ -186,7 +245,8 @@ class SimHandler(object):
             if not self.allow_overwrite:
                 msg = _C_FAIL + "[F] logpath already exists." + _C_ENDC
                 msg += "\n\t{}".format(logdir)
-                msg += _C_FAIL + "\nconsider the --allow-overwrite option if you meant to reuse the path" + _C_ENDC
+                msg += _C_FAIL + "\nconsider the --allow-overwrite option" +\
+                    "if you meant to reuse the path" + _C_ENDC
 
                 raise RuntimeError(msg)
             else: # emit an info message that we are overwriting path.
@@ -335,7 +395,7 @@ class SimHandler(object):
     def mkdir(self, pth, prestore=False):
         ''' convenience wrapper to ensure mkdirs are logged '''
         self.disp_cmd_to_exec("mkdir -p {}".format(pth), prestore=prestore)
-        mkdir_p(pth)
+        utils.mkdir_p(pth)
 
     def copyfile(self, src, dest):
         self.disp_cmd_to_exec("cp -p {} {}".format(src, dest))
@@ -391,6 +451,225 @@ class SimHandler(object):
     def done(self):
         if self._cmdlog is not None and self._cmdlog.closed is False:
             self._cmdlog.close()
+    #}}}
+
+    #{{{ validation
+    def check_deployment_exists(self):
+        '''
+        check that the deployment working dir exists, and that the key
+        deployment files exist (And are readable?)
+        '''
+        check_passed = CHECK_OK
+        # 1. depdir exists?
+        wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
+        if not os.path.isdir(wd):
+            self.disp_msg("[F] deployment dir does not exist!: {}".format(wd),
+                          level='F')
+            return CHECK_FAILED_FATAL
+
+        #self.cd(wd) # needed?
+        # 2. project file. This one is essential too.
+        pf = os.path.join(self.project_root, self.config['DEPLOY_DIR'], self.config['PRJ_FILE'])
+        if not os.path.isfile(pf):
+            self.disp_msg("[F] assisi project file does not exist!: {}".format(pf),
+                          level='F')
+            return CHECK_FAILED_FATAL
+
+        # 3. now read the spec for key files.
+        files = []
+        self.depfile = None
+
+        with open(pf) as project_file:
+            project = yaml.safe_load(project_file)
+            for key in ['arena', 'dep', 'nbg']:
+                _f = project.get(key, None)
+                if _f is not None:
+                    src = os.path.join(self.project_root, self.config['DEPLOY_DIR'], _f)
+                    files.append(src)
+                    if key is 'dep':
+                        self.depfile = src
+
+                else:
+                    self.disp_msg("[W] {} file is not specified.".format(key), level='W')
+                    check_passed = CHECK_FAILED_WARN
+
+
+        # 4. for all specified files, check they exist
+        for f in [self.conf_file, pf] + files :
+            if not os.path.exists(f):
+                self.disp_msg("[F] specified deployment file does not exist {}".format(f),
+                              level='F')
+                check_passed = CHECK_FAILED_FATAL
+
+        return check_passed
+
+    #{{{ validate_depfile
+    def validate_depfile(self, report=False):
+        '''
+        read an assisi deployment .dep file, check that the relevant files are
+        all exist.
+        this should be tested from the path ...
+        and check all files in the parameters CONTROLLER and EXTRA (list)
+
+        '''
+        if self.depfile is None:
+            return CHECK_FAILED_WARN
+
+        d = yaml.load(open(self.depfile))
+        i = 0
+        # construct dictionary of dependency files, with full path
+        # note: references are relative to depfile location
+        pth = os.path.dirname(os.path.realpath(self.depfile))
+        files = {}
+        for arena in d.keys():
+            for casu in d[arena].keys():
+                ctrlr = d[arena][casu].get('controller', None)
+                extra = d[arena][casu].get('extra', [])
+                if ctrlr is not None:
+                    _f = os.path.realpath(os.path.join(pth, ctrlr))
+                    files[_f] = False
+                    i += 1
+                for fi in extra:
+                    _f = os.path.realpath(os.path.join(pth, fi))
+                    files[_f] = False
+                    i += 1
+
+        if report:
+            print "[ ] checking existence of referred files in depfile... "
+        e = check_files_exist(files, report=report)
+
+        # how many files are missing
+        _s = "[I] references to {} files ({} unique) in depfile '{}'.".format(
+            i, len(files), os.path.basename(self.depfile) )
+
+        if e > 0:
+            _s = _C_ERR + _s + "!! {} files not found!!".format(e) + _C_ENDC
+        else:
+            _s = _C_OKGREEN + _s + _C_ENDC
+
+        if report or e > 0:
+            print _s
+        return e
+    #}}}
+
+    #{{{ check_tools_exist
+    def check_toolargs_exist(self, report=False):
+        if report:
+            print "[ ] checking existence of files in tool args..."
+        files = {}
+        i = 0
+        # self.pg_cfg_file is used with the assisi_playground
+        if self.pg_cfg_file is not None:
+            # assisi conf file should be relative to proj root
+            _f = os.path.join(self.project_root, self.pg_cfg_file)
+            files[_f] = False
+            i += 1
+
+        e = check_files_exist(files, report=report)
+
+        # how many files are missing
+        _s = "[I] references to {} files ({} unique) in tool args.".format(
+            i, len(files), )
+        if e > 0:
+            _s = _C_ERR + _s + "!! {} files not found!!".format(e) + _C_ENDC
+        else:
+            _s = _C_OKGREEN + _s + _C_ENDC
+
+        if report or e > 0:
+            print _s
+        return e
+
+    def check_tools_exist(self, report=False):
+        # tools
+        if report:
+            print "[ ] checking tools on path..."
+        tool_list = [
+            self.TOOL_EXEC_AGENTS, self.TOOL_CASU_EXEC, self.TOOL_SIMULATOR,
+            self.TOOL_CASU_SPAWN, self.TOOL_DEPLOY, self.TOOL_COLLECT_LOGS]
+        missing_tools = []
+
+        for tool in tool_list:
+            if tool is not None:
+                res = utils.which(tool)
+                if res is None:
+                    missing_tools.append(tool)
+                    self.disp_msg(
+                        "  tool {} is not on path. Overall exec may not run".format(tool),
+                        level='W')
+                else:
+                    if report:
+                        print "   [I] {} OK".format(tool)
+
+        if report:
+            if len(missing_tools) == 0:
+                print _C_OKGREEN + \
+                    "[I] all {} tools available on path".format(len(tool_list)) \
+                    + _C_ENDC
+            else:
+                print _C_WARNING + \
+                    "[W] {} tools unavailable on path".format(len(missing_tools)) \
+                    + _C_ENDC
+
+
+    #}}}
+
+    #{{{ check_agent_tools
+    def check_agent_tools(self, report=False):
+        '''
+        for each population, check the tools and files defined all exist
+        '''
+
+        wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
+
+        # every pop spec could have
+        # - a behav_script (this should be a relative or abs path, python file)
+        # - archives, a list of config files, etc
+        # - a wall spawner, (execution command line, )
+        # - an agent spawner.
+        print "[ ] checking existence of files and scripts in agent spec '{}' ...".format(self.conf_file)
+
+        files = {}
+        i = 0
+        _ag_data = self.config.get('agents', {}) # if nothing defined, ignore.
+        for pop, data in _ag_data.items():
+            # behav script:
+            bs = data.get('behav_script', None)
+            if bs is not None:
+                f = os.path.realpath(os.path.join(wd, bs))
+                files[f] = False
+                i += 1
+
+            archs = data.get('archives', [])
+            for a in archs:
+                f = os.path.realpath(os.path.join(wd, a))
+                files[f] = False
+                i += 1
+
+            # wall spawner and spawner are commands, referring to user-scripts
+            for key in ['wall_spawner', 'spawner']:
+                cmd = data.get(key, None)
+                if cmd is not None:
+                    exe = utils.extract_scriptname(cmd)
+                    f = os.path.realpath(os.path.join(wd, exe))
+                    files[f] = False
+                    i += 1
+
+        # now check all teh files exist and report.
+        e = check_files_exist(files, report=report)
+        # how many files are missing
+        _s = "[I] references to {} files ({} unique) in agent spec.".format(
+            i, len(files), )
+        if e > 0:
+            _s = _C_ERR + _s + "!! {} files not found!!".format(e) + _C_ENDC
+        else:
+            _s = _C_OKGREEN + _s + _C_ENDC
+
+        if report or e > 0:
+            print _s
+        return e
+
+    #}}}
+
     #}}}
 
     #{{{ main stages of expt execution
@@ -718,6 +997,7 @@ def main():
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
     parser.add_argument('--allow-overwrite', action='store_true')
+    parser.add_argument('-S', '--dry-run', action='store_true')
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
     #
@@ -735,7 +1015,10 @@ def main():
 
     cwd = os.getcwd()
     hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
-                      allow_overwrite=args.allow_overwrite)
+                      allow_overwrite=args.allow_overwrite, dry_run=args.dry_run)
+    if args.dry_run:
+        print "[I] all done with checks."
+        return
 
     try:
         hdlr.pre_calib_setup() # initialise: playground, deploy, walls
