@@ -25,7 +25,7 @@ Major parts of code following Aug 2015 setup
 
 '''
 
-import yaml, os, argparse, sys, errno
+import yaml, os, argparse, sys
 import shutil
 import subprocess, signal
 import datetime, time

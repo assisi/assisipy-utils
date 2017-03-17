@@ -1,5 +1,5 @@
 import os
-
+import errno
 
 def which(program):
     '''
