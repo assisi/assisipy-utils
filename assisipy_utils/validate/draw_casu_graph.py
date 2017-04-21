@@ -20,11 +20,17 @@ import yaml, os
 
 
 class TopoGeomGraph(object):
-    def __init__(self, project, scale=2.0, outfile=None):
+    def __init__(self, project, scale=2.0, outfile=None, verb=False):
         #{{{ initialiser
+        self.verb = verb
         ### load specification files
+        if self.verb:
+            print "[I] loading definitions for {}".format(os.path.basename(project))
         with open(project) as f:
             self.project_spec = yaml.safe_load(f)
+            if self.verb:
+                print "   [I] loaded assisi defn"
+
 
         self.project_root = os.path.dirname(os.path.abspath(project))
         self.scale = scale
@@ -47,9 +53,13 @@ class TopoGeomGraph(object):
 
         with open(os.path.join(self.project_root, self.af)) as f:
             self.arena = yaml.safe_load(f)
+            if self.verb:
+                print "   [I] loaded .arena file '{}'.".format(self.af), self.arena.keys()
 
         # load topology (nbg)
         self.DG = pgv.AGraph(self.nbg, directed=True)
+        if self.verb:
+            print "   [I] loaded .nbg file"
         # generate flattened geometry data
         self._flatten_phys_layout()
         # attach a geometric position to the casu if specified
@@ -61,7 +71,9 @@ class TopoGeomGraph(object):
         if not self._phys_layout_loaded:
             self._flatten_phys_layout()
 
+        if self.verb: print "[I] adding geometric data to graph"
         for _node in self.DG.nodes():
+            if self.verb: print "   [I] working on node {}".format(_node)
             # we need to flatten the topo naming as well
             if "/" in _node:
                 _aa, nodename = _node.split('/')[0:2]
@@ -75,6 +87,11 @@ class TopoGeomGraph(object):
                         pose['x']/self.scale, pose['y']/self.scale)
                     # add the attribute to the original topo node (?)
                     _node.attr['pos'] = s
+                    if self.verb:
+                        print "   [I] added pos {} to node {} ({})".format(s, nodename, _node)
+                else:
+                    print "   [W] skipping {} ({}) since no data".format(nodename, _node)
+
 
     #}}}
 
@@ -120,6 +137,6 @@ if __name__ == "__main__":
     #}}}
 
     TGG = TopoGeomGraph(project=args.project, scale=args.scale_factor,
-                        outfile=args.outfile)
+                        outfile=args.outfile, verb=args.verb)
     TGG.write()
 
