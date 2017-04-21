@@ -61,13 +61,20 @@ class TopoGeomGraph(object):
         if not self._phys_layout_loaded:
             self._flatten_phys_layout()
 
-        for node in self.DG.nodes():
-            if node in self.allnodes:
-                pose = self.allnodes[node].get('pose')
+        for _node in self.DG.nodes():
+            # we need to flatten the topo naming as well
+            if "/" in _node:
+                _aa, nodename = _node.split('/')[0:2]
+            else:
+                nodename = str(_node)
+
+            if nodename in self.allnodes:
+                pose = self.allnodes[nodename].get('pose')
                 if pose:
                     s = "{},{}!".format(
                         pose['x']/self.scale, pose['y']/self.scale)
-                    node.attr['pos'] = s
+                    # add the attribute to the original topo node (?)
+                    _node.attr['pos'] = s
 
     #}}}
 
