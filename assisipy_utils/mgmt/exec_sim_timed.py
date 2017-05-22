@@ -266,6 +266,17 @@ class SimHandler(object):
         self.mkdir(self.procdir, prestore=True)
         self.archdir = os.path.join(self.logdir, 'archive')
         self.mkdir(self.archdir, prestore=True)
+        #
+
+        self.pg_img_dir = None # default case
+        #if 'playground_args' in self.config:
+        _pg_args = self.config.get('playground_args', [])
+        if any(["img_path" in _ for _ in _pg_args]):
+            # we expect the pg to emit images and will then create a
+            # directory for it; also declare this as the parameter.
+            self.pg_img_dir = os.path.join(self.logdir, "snapshots")
+            self.mkdir(self.pg_img_dir, prestore=True)
+
 
     def _setup_cmdlog(self):
         # open a logfile, for all commands executed to be entered.
@@ -334,8 +345,11 @@ class SimHandler(object):
             sandbox_dir = prj_name + '_sandbox'
             src = os.path.join(depdir, sandbox_dir)
             dst = os.path.join(self.archdir, sandbox_dir)
-            #print "[I] will copy from {} to {}  ".format(src, dst)
-            self.copytree(src, dst)
+            print "[I] will copy from {} to {}  ".format(src, dst)
+            try:
+                self.copytree(src, dst)
+            except IOError as e:
+                print "[W] data not found?", e
         else:
             print "[W] called at a bad time."
 
@@ -696,6 +710,11 @@ class SimHandler(object):
         if self.pg_cfg_file is not None:
             pg_cmd += " -c {}".format(
             os.path.join(self.project_root, self.pg_cfg_file))
+
+        if self.pg_img_dir is not None:
+            pg_cmd += " --Output.img_path {}".format(
+                self.pg_img_dir)
+
         self.disp_cmd_to_exec(pg_cmd, bg=True)
         p1 = wrapped_subproc(DO_TEST, pg_cmd, stdout=subprocess.PIPE,
                 shell=True, preexec_fn=os.setsid)
@@ -751,6 +770,9 @@ class SimHandler(object):
 
         if a_file is not None:
             spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, a_file)
+            sim_extra = self.config.get('sim_args', "")
+            spwn_casus += " " + sim_extra
+
             self.disp_cmd_to_exec(spwn_casus)
             p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
             p2.wait()
@@ -795,6 +817,8 @@ class SimHandler(object):
 
         self.disp_msg("deployment complete.")
         if self.selected_archives.get('deploy_sandbox', False):
+            time.sleep(0.5)
+            self.disp_msg('attempting to archive the deployment config')
             self._arch_dep_sandbox()
         pass
 
