@@ -303,18 +303,22 @@ class TestCommConfig(object):
     #{{{ showcmds
     def showcmds(self, annotate):
         # simulation needs - simulator, sim.py deploy, assisirun.py
+        pidfile = "/tmp/pg_pid_aput_tc" # somewhat unique name
+        graph_file = "results_{}.pdf".format("")
+
         print "\n" + "="*75
         print "--- execute these commands to run full test and graph results ---"
         print "    (skip simulator and sim.py stages if using only physical casus)"
         print "--- " + "-"*63
 
         print "cd {}".format(os.path.join(self.project_root, self.sandbox_dir))
-        print "assisi_playground &"
+        print "assisi_playground & echo $! > {}".format(pidfile)
         print "sim.py {}".format(self.out_project_file)
         print "deploy.py {}".format(self.out_project_file)
         print "assisirun.py {}".format(self.out_project_file)
 
         if annotate:
+            print "kill -15 `cat {}`".format(pidfile)
             print "collect_data.py {}".format(self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
@@ -322,8 +326,9 @@ class TestCommConfig(object):
             print "show_assisi_dep_test {} -m {}".format(self.out_project_file, msg_file)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
-            print "neato -Tpdf {}.layout > results_{}.pdf".format(
-                self.nbg_file, "")
+            print "neato -Tpdf {}.layout > {}".format(
+                self.nbg_file, graph_file)
+            print "evince {}".format( graph_file)
 
         #
         print "="*75
