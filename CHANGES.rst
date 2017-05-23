@@ -9,6 +9,16 @@ New features
 * deployment sandbox is archived (optionally)
 * validation for input files specified begun
   (this is a component of a dry-run but not done in the same way)
+* arguments can be passed to the simulator and to spawn stages
+
+Issues resolved
+
+* graphs generated with positions can handle multi-layer graphs
+  (i.e. those with subgraphs, and links specified explicitly between 
+  subgraph1/nodenameA -> subgraph2/nodenameB)
+
+
+
 
 0.7.1
 -----
