@@ -1,6 +1,14 @@
 Change and release log
 ======================
 
+0.7.3
+-----
+
+Issues resolved
+
+* message/deployment validation tool now handles layered graphs
+  (closes #20)
+
 0.7.2
 -----
 

@@ -53,12 +53,14 @@ def read_node_recs(recs_file):
 #}}}
 
 #{{{ annotate according to log file
-def annotate_links_by_msg(DG, msgs_ok):
+def annotate_links_by_msg(DG, msgs_ok, layered=True):
     '''
     for each node-node link (=edge in the graph), if a message was successfully
     received in the conn_test phase, mark as green. else mark as red.
 
     changes are made inline
+    if layered is True, process graph as if the edges are named as layer/casuname
+    (otherwise, DG should have a flat definition)
     '''
 
     # apply a color to each edge according to whether message was rx ok.
@@ -72,6 +74,11 @@ def annotate_links_by_msg(DG, msgs_ok):
         # check whether the edge is linked ok during the test
         _f = str(edge[0].encode('ascii','ignore'))
         _t = str(edge[1].encode('ascii','ignore'))
+        if layered and "/" in _f:
+            _, _f = _f.split('/')[0:2]
+        if layered and "/" in _t:
+            _, _t = _t.split('/')[0:2]
+
         for mf, mt in msgs_ok:
             mf = str(mf)
             mt = str(mt)
@@ -83,10 +90,13 @@ def annotate_links_by_msg(DG, msgs_ok):
         if not hit:
             print "[E] failed to traverse ", edge
 
-def annotate_nodes_by_writemsg(DG, node_write_ok):
+def annotate_nodes_by_writemsg(DG, node_write_ok, layered=True):
     '''
     for each node that we could successfully write values to, mark the node in
     DG as green. Else mark as red.
+
+    if layered is True, process graph as if the edges are named as layer/casuname
+    (otherwise, DG should have a flat definition)
 
     changes made inline
     '''
@@ -96,6 +106,9 @@ def annotate_nodes_by_writemsg(DG, node_write_ok):
         node.attr['penwidth'] = 3
         hit = False
         _n = str(node.encode('ascii', 'ignore'))
+        if layered and "/" in _n:
+            _, _n = _n.split('/')[0:2]
+
         for n in node_write_ok:
             if n == _n:
                 hit = True

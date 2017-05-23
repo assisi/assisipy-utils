@@ -47,5 +47,7 @@ def main():
     # generate new graph, with extra info.
     TGG.write()
 
+    return args, TGG
+
 if __name__ == "__main__":
-    main()
+    a, TGG = main()
