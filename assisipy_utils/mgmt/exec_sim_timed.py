@@ -154,6 +154,12 @@ class SimHandler(object):
         # parse config file
         with open(self.conf_file) as _f:
             self.config = yaml.safe_load(_f)
+
+        # handle potentially empty arguments
+        for key in ['agents',] :
+            v = self.config.get(key, {})
+            if v is None: self.config[key] = {}
+
         # extract additional config requirements, with defaults
         self.pg_cfg_file = self.config.get('playground_config', None)
         #self.pg_cfg_file = self.config.get('playground_config', 'config/Playground.cfg')
