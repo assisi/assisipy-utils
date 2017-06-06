@@ -7,6 +7,12 @@ New features
   information
   (closes #18)
 
+* included option to annotate the physically-layed out graphs with 
+  hostnames.
+  (closes #22)
+
+* all tools (?) now include the tool_version property in their argparse
+  handler, giving --version option and message in the -h description
 
 0.7.3
 -----
@@ -17,7 +23,10 @@ Issues resolved
   (closes #20)
 * exec tools now handle empty agents field
   (closes #17)
-
+* test_conn script has a manually-settable runtime and a choice to
+  generate simulator commands where appropriate
+  (closes #19)
+  
 
 
 0.7.2
