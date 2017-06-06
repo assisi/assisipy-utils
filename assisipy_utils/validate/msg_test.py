@@ -15,7 +15,6 @@ import pygraphviz as pgv
 
 DO_LOG=False
 SYNC_PERIOD = 10 # maybe a minute is better but for testing in sim shorter ok
-MAX_TIME    = 50 # NOT SURE how to compute this one yet
 INTERVAL = 8.0
 ERR = '\033[41m'
 BLU = '\033[34m'
@@ -173,7 +172,7 @@ class TestMsgChannels(object):
     TSTR_FMT = "%Y/%m/%d-%H:%M:%S-%Z"
 
     #{{{ init
-    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None):
+    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None, timeout=50.0):
 
         self._rtc_pth, self._rtc_fname = os.path.split(casu_name)
         if self._rtc_fname.endswith('.rtc'):
@@ -182,6 +181,7 @@ class TestMsgChannels(object):
             self.name = self._rtc_fname
 
         self.verb = 1
+        self.timeout = timeout
         self.nbg = nbg
         self.read_interactions()
 
@@ -437,7 +437,7 @@ class TestMsgChannels(object):
 
                     self.emitted = True
                     elap = time.time() - self.init_time
-                    t_remain = MAX_TIME - elap
+                    t_remain = self.timeout - elap
                     print "[I] {} emitted all messages. {:.0f}s remain".format(
                         self.name, t_remain)
                     self.flash(n=1, duty=0.9, cycle_len=0.4, clr=(0,0.5,0))
@@ -445,8 +445,7 @@ class TestMsgChannels(object):
 
             # 4. sleep a bit
             time.sleep(0.2)
-            pass
-            if now - self.init_time > MAX_TIME:
+            if now - self.init_time > self.timeout:
                 break
         pass
     #}}}
@@ -459,12 +458,13 @@ if __name__ == '__main__':
     #parser.add_argument('-c', '--conf', type=str, default=None)
     parser.add_argument('-o', '--output', type=str, default=None)
     parser.add_argument('--nbg', type=str, default=None)
+    parser.add_argument('--timeout', type=float, default=60.0)
     parser.add_argument('--delay', type=int, required=True,
                         help="how many periods to wait before emitting")
     args = parser.parse_args()
 
     c = TestMsgChannels(args.name, logname=args.output, delay=args.delay,
-                        nbg=args.nbg)
+                        nbg=args.nbg, timeout=args.timeout)
 
     if c.verb > 0: print "Msg test - connected to {}".format(c.name)
     try:
