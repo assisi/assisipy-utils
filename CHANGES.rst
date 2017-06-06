@@ -1,6 +1,13 @@
 Change and release log
 ======================
 
+New features
+* included new graph tool (n.b. this should make version bump to 0.8)
+  as user script that draws a physical layout, combining .arena and .nbg
+  information
+  (closes #18)
+
+
 0.7.3
 -----
 
@@ -8,6 +15,10 @@ Issues resolved
 
 * message/deployment validation tool now handles layered graphs
   (closes #20)
+* exec tools now handle empty agents field
+  (closes #17)
+
+
 
 0.7.2
 -----
