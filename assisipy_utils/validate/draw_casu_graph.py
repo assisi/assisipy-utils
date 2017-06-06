@@ -98,6 +98,44 @@ class TopoGeomGraph(object):
 
     #}}}
 
+    #{{{ add_bbg_annotation
+    def add_bbg_annotation(self, dx=1.5, dy=-2.0, shape="octagon"):
+        '''
+        for each node in network, attempt to find a beaglebone or other hostname
+        and indicate on the geometrically defined graph.
+        '''
+
+        if not self._phys_layout_loaded:
+            self._flatten_phys_layout()
+
+        attrs= {'style': "filled", 'label':None, 'shape':shape}
+
+        for nodename, _data in self.allnodes.items():
+            pa = _data.get('pub_addr', "none")
+            hoststr = pa.split('//')[-1].split(':')[0]
+
+            newnode = "{}-{}".format(hoststr, nodename)
+
+            pose = self.allnodes[nodename].get('pose')
+            if pose:
+                x = pose['x']+dx
+                y = pose['y']+dy
+                s = "{:.3f},{:3f}!".format(float(x)/self.scale, float(y)/self.scale)
+                this_attrs = dict(attrs) # copy
+                this_attrs['label'] = str(hoststr) # extend
+                this_attrs['pos'] = s
+
+                #s = "{},{}!".format(
+                #    pose['x']/self.scale, pose['y']/self.scale)
+                # add the attribute to the original topo node (?)
+                #_node.attr['pos'] = s
+                print "Adding node '{}' with attrs \n".format(newnode), this_attrs
+
+                self.DG.add_node(newnode, **this_attrs)
+
+
+    #}}}
+
     #{{{ flatten physical layout graph (arena)
     def _flatten_phys_layout(self):
         '''
@@ -137,6 +175,7 @@ def main():
                         help="scaling factor for layout. 3.0 works well for"
                         "a 9-CASU array")
     parser.add_argument('-o', '--outfile', help='name to generate output graph in', default=None)
+    parser.add_argument('-sh', '--show-hosts', action='store_true', help="include hostname annotations in the output graph")
     parser.add_argument('-v', '--verb', action='store_true', help="be verbose")
 
     args = parser.parse_args()
@@ -144,6 +183,9 @@ def main():
 
     TGG = TopoGeomGraph(project=args.project, scale=args.scale_factor,
                         outfile=args.outfile, verb=args.verb)
+    if args.show_hosts:
+        TGG.add_bbg_annotation()
+
     TGG.write()
 
     return args, TGG
