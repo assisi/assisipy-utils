@@ -21,7 +21,6 @@ def main():
     #{{{ cmd line args
     parser = argparse.ArgumentParser(
             description=desc,
-            #description="simple tool to augment a .nbg file with labels and positions",
         formatter_class=argparse.RawTextHelpFormatter)
     tool_version.ap_ver(parser) # attach package dev version to parser
     parser.add_argument('project', help='name of .assisi file specifying the project details.')
@@ -30,6 +29,7 @@ def main():
                         "a 9-CASU array")
     parser.add_argument('-o', '--outfile', help='name to generate output graph in', default=None)
     parser.add_argument('-v', '--verb', action='store_true', help="be verbose")
+    parser.add_argument('-sh', '--show-hosts', action='store_true', help="include hostname annotations in the output graph")
     parser.add_argument("-m", "--msg_file", type=str, default=None,
                         help="csv of msging test results")
 
@@ -50,6 +50,9 @@ def main():
     validate.annotate_links_by_msg(TGG.DG, msgs_ok)
     validate.annotate_nodes_by_writemsg(TGG.DG, node_write_ok)
 
+    # add extra host info, but not before all the checks are done
+    if args.show_hosts:
+        TGG.add_bbg_annotation()
     # generate new graph, with extra info.
     TGG.write()
 
