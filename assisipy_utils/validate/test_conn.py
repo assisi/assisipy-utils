@@ -19,15 +19,20 @@ import shutil
 
 import pygraphviz as pgv
 
+from assisipy_utils import tool_version
 
 
+ERR     = '\033[41m'
+BLU     = '\033[34m'
+OKGREEN = '\033[92m'
+ENDC    = '\033[0m'
 class TestCommConfig(object):
     """
     Class that generates .dep files and sandboxes for the connection validation
     """
 
     #{{{ initialiser
-    def __init__(self, project_file_name, testlinks=True):
+    def __init__(self, project_file_name, testlinks=True, simcmds=False, timeout=60.0):
         """
         Parses the configuration files and initializes internal data structures.
         """
@@ -36,6 +41,8 @@ class TestCommConfig(object):
         self.dep      = {}
         self.nbg_file = None
         self.TESTLINK = testlinks
+        self.simcmds  = simcmds
+        self.timeout  = timeout
 
         self.project_root = os.path.dirname(os.path.abspath(project_file_name))
         self.sandbox_dir = self.proj_name + '_commconfig' + '_sandbox'
@@ -80,6 +87,23 @@ class TestCommConfig(object):
         print "--- Preparing deployment config for commtest ---"
         self.prep_commtest()
         self.prepared = True
+
+    def validate_config(self):
+        num_nodes = 0 
+        for layer in sorted(self.arena):
+            for casu in sorted(self.arena[layer]):
+                num_nodes += 1
+        # STILL don't have an estimated duration since STILL didn't parse 
+        # the nbg file and look for #outlinks (.successors?) 
+        # so for now just "know" that the interval is 7s
+        total_duration= 7.0 * num_nodes
+        if total_duration > self.timeout:
+            warn_str = "[E] defined timeout of {:.1f} is likely too short - expected {}s".format(self.timeout, total_duration)
+            # should this be a fatal error? I think not, so just warn for now
+            print ERR + warn_str + ENDC
+            # raise ValueError(warn_str)
+
+
 
     def prep_commtest(self):
         '''
@@ -134,6 +158,8 @@ class TestCommConfig(object):
                     i += 1 # we need to compute the number of outlinks, not just
                     # one delay step per casu.
                     testdepinfo['args'] += ['--nbg {}'.format(self.nbg_file)]
+                    if self.timeout is not None:
+                        testdepinfo['args'] += ['--timeout {}'.format(self.timeout)]
 
                     testdepinfo['extra'] = [self.nbg_file, ]
                     testdepinfo['results'] = ['*.log']
@@ -252,8 +278,8 @@ class TestCommConfig(object):
         if fatal_cnt > 0:
             raise ValueError("[F] errors found ({}) in link specification. Aborting.".format(fatal_cnt))
         else:
-            print "[I] no duplicate labels found in link specification. " + \
-                "\n    Checked {} nodes and {} links".format(node_cnt, edge_cnt)
+            print OKGREEN + "[I] no duplicate labels found in link specification. " + \
+                "\n    Checked {} nodes and {} links".format(node_cnt, edge_cnt) + ENDC
 
         return G
     #}}}
@@ -295,35 +321,42 @@ class TestCommConfig(object):
         if fatal_cnt > 0:
             raise ValueError("[F] errors found ({}) in CASU port specification. Aborting.".format(fatal_cnt))
         else:
-            print "[I] no duplicate msg_addrs found in areana specification. " + \
-                "\n    Checked {} casus".format(casu_cnt)
+            print OKGREEN + "[I] no duplicate msg_addrs found in areana specification. " + \
+                "\n    Checked {} casus".format(casu_cnt) + ENDC 
 
         #}}}
 
     #{{{ showcmds
     def showcmds(self, annotate):
+        self.validate_config()
         # simulation needs - simulator, sim.py deploy, assisirun.py
         pidfile = "/tmp/pg_pid_aput_tc" # somewhat unique name
         graph_file = "results_{}.pdf".format("")
 
         print "\n" + "="*75
         print "--- execute these commands to run full test and graph results ---"
-        print "    (skip simulator and sim.py stages if using only physical casus)"
+        if self.simcmds: # message is kind of redundant, user asked these commands.
+            print "    (skip simulator and sim.py stages if using only physical casus)"
         print "--- " + "-"*63
 
         print "cd {}".format(os.path.join(self.project_root, self.sandbox_dir))
-        print "assisi_playground & echo $! > {}".format(pidfile)
-        print "sim.py {}".format(self.out_project_file)
+        if self.simcmds:
+            print "assisi_playground & echo $! > {}".format(pidfile)
+            print "sim.py {}".format(self.out_project_file)
+
         print "deploy.py {}".format(self.out_project_file)
         print "assisirun.py {}".format(self.out_project_file)
+        print "# wait for approx {}s".format(self.timeout)
 
         if annotate:
-            print "kill -15 `cat {}`".format(pidfile)
+            if self.simcmds:
+                print "kill -15 `cat {}`".format(pidfile)
+
             print "collect_data.py {}".format(self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
             print 'find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep -v ^# > {}'.format(datadir, "{}", msg_file)
-            print "show_assisi_dep_test {} -m {}".format(self.out_project_file, msg_file)
+            print "show_assisi_dep_test {} -m {} --show-hosts".format(self.out_project_file, msg_file)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
             print "neato -Tpdf {}.layout > {}".format(
@@ -337,18 +370,26 @@ class TestCommConfig(object):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate a deployment setup for calibration of CASUs')
+    tool_version.ap_ver(parser) # attach package dev version to parser
     parser.add_argument('project', help='name of .assisi file specifying the project details.')
     parser.add_argument('--links', type=int, default=1, )
     # TODO: This is fully implemented yet!
+    parser.add_argument('--timeout', type=float, default=60.0, 
+            help="explicitly set the message test runtime")
     parser.add_argument('--layer', help='Name of single layer to action', default='all')
-    parser.add_argument('-na', '--skip-annotate', help='annotate graph or visual test', action='store_true')
+    parser.add_argument('-na', '--skip-annotate', action='store_true',
+            help='annotate graph or solely visual test',)
+    parser.add_argument('-sim', '--use-simulator', action='store_true',
+            help="include simulator in generated commands if set", )
     args = parser.parse_args()
     if args.skip_annotate:
         args.annotate = False
     else:
         args.annotate = True
 
-    project = TestCommConfig(args.project, testlinks=args.links)
+    project = TestCommConfig(args.project, testlinks=args.links, 
+            simcmds=args.use_simulator, timeout=args.timeout)
+    project.validate_config()
     project.prep()
     project.check_links()
     project.showcmds(args.annotate)
