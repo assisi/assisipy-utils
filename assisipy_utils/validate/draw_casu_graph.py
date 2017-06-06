@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''
+
+desc='''
 simple tool to augment a .nbg file with labels and positions
 
 - the .nbg file (dot format) defines the graph topology
@@ -17,6 +18,8 @@ the physical and topological layout together.
 import pygraphviz as pgv
 import argparse
 import yaml, os
+
+from assisipy_utils import tool_version
 
 
 class TopoGeomGraph(object):
@@ -121,11 +124,14 @@ class TopoGeomGraph(object):
         print "neato -Tpdf -O {}".format(self.outfile)
     #}}}
 
-if __name__ == "__main__":
 
+def main():
     #{{{ cmd line args
     parser = argparse.ArgumentParser(
-        description="simple tool to augment a .nbg file with labels and positions")
+            description=desc,
+            #description="simple tool to augment a .nbg file with labels and positions",
+        formatter_class=argparse.RawTextHelpFormatter)
+    tool_version.ap_ver(parser) # attach package dev version to parser
     parser.add_argument('project', help='name of .assisi file specifying the project details.')
     parser.add_argument('-s', '--scale-factor', type=float, default=3.0,
                         help="scaling factor for layout. 3.0 works well for"
@@ -140,3 +146,7 @@ if __name__ == "__main__":
                         outfile=args.outfile, verb=args.verb)
     TGG.write()
 
+    return args, TGG
+
+if __name__ == "__main__":
+    a, TGG = main()

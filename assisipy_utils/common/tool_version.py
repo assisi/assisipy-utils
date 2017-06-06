@@ -58,7 +58,7 @@ def ap_ver(parser=None):
 
 
 
-    parser.add_argument('-v', '--version', action='version',
+    parser.add_argument('-V', '--version', action='version',
                         version=GIT_VERSION)
 
     return parser

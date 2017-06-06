@@ -1,23 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
-example usage of the validate.TopoGeomGraph class, extending to:
+desc='''
+A simple tool to augment a .nbg file with labels, positions, and edge 
+weights, and compute the incoming edge weight total, for each node.
+
+This is an example usage of the validate.TopoGeomGraph class, extending to:
     - annotate with edge weights
     - parse results of a `conn_test` messaging test
     - color the final graph according to success/failure of all
       the tests
 '''
 from assisipy_utils import validate
+from assisipy_utils import tool_version
+
 import argparse
 
 
 def main():
     #{{{ cmd line args
     parser = argparse.ArgumentParser(
-        description="simple tool to augment a .nbg file with labels, "
-                    "positions, and edge weights, and compute the incoming edge"
-                    "weight total, for each node")
+            description=desc,
+            #description="simple tool to augment a .nbg file with labels and positions",
+        formatter_class=argparse.RawTextHelpFormatter)
+    tool_version.ap_ver(parser) # attach package dev version to parser
     parser.add_argument('project', help='name of .assisi file specifying the project details.')
     parser.add_argument('-s', '--scale-factor', type=float, default=3.0,
                         help="scaling factor for layout. 3.0 works well for"
