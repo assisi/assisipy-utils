@@ -57,5 +57,40 @@ def extract_scriptname(cmdline):
             return fields[0]
 
 
+def chunk_text_by_nl(txt):
+    '''
+    return dict of strings separated by \n
+    if any blank lines, swallow
+    '''
+    E = {}
+    i = 0
+    for line in txt.split('\n'):
+        if len(line) > 0:
+            E[i] = line
+            i += 1
+
+    return i, E
+
+
+def chunk_text_by_blankline(txt):
+    '''
+    return dict of lists separated by \n and then by blank newline
+    '''
+    E = {}
+    e = []; i = 0
+    for line in txt.split('\n'):
+        if len(line) == 0:
+            #print i, e;
+            if len(e):
+                E[i] = e
+                i += 1
+
+            e = []
+        else:
+            e.append(line);
+
+    return i, E
+
+
 
 

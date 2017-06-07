@@ -147,6 +147,7 @@ class SimHandler(object):
         self.expt_type   = "simulation"
         self.allow_overwrite = kwargs.get('allow_overwrite', False)
         self.dry_run = kwargs.get('dry_run', False)
+        self.verb    = kwargs.get('verb', 0)
 
         self._deployed = False
         self._expt_run = False
@@ -272,6 +273,8 @@ class SimHandler(object):
         self.mkdir(self.procdir, prestore=True)
         self.archdir = os.path.join(self.logdir, 'archive')
         self.mkdir(self.archdir, prestore=True)
+        self.stagelogdir = os.path.join(self.logdir, 'stage_logs')
+        self.mkdir(self.stagelogdir, prestore=True)
         #
 
         self.pg_img_dir = None # default case
@@ -986,7 +989,7 @@ class SimHandler(object):
             lf.close()
 
 
-    def collect_logs(self, verb=0, expected_file_cnt=None):
+    def collect_logs(self, expected_file_cnt=None):
         '''
         retrieve all of the log files that the experiment or simulation
         produced. If `expected_file_cnt` is defined, count how many logs were
@@ -1001,16 +1004,39 @@ class SimHandler(object):
             self.config['PRJ_FILE'], self.logdir)
         self.disp_cmd_to_exec(cll_cmd)
         p2 = wrapped_subproc(DO_EXEC, cll_cmd,
-                #stdout=subprocess.pipe, # allow stdout out
-                shell=True)
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell=True)
         p2.wait()
+        # now capture the output,
+        out, err = p2.communicate()
+        # rest goes to logfile.
+        with open(os.path.join(self.stagelogdir, 'collect_logs.stdout'), 'w') as f:
+            f.writelines(out)
+
+        if len(err):
+            with open(os.path.join(self.stagelogdir, 'collect_logs.stderr'), 'w') as f:
+                f.writelines(err)
+
+            ei, E = utils.chunk_text_by_blankline(err)
+            level = 'W'
+            if "error" in err.lower(): level = 'E'
+            self.disp_msg(
+                "{} warning/error entries in 'collect_logs' stage".format(ei),
+                level=level)
+            if self.verb > 0:
+                for k, v in E.items():
+                    print "{}:\t".format(k), _C_WARNING + "\n".join(v) + _C_ENDC
+
+        #TODO:  display a summary; accumulate warnings and error count
+
 
         # 2. check #files in log path
         if expected_file_cnt is not None:
             cmd = "find {} -type f | wc -l ".format(self.logdir)
 
             lines = subprocess.check_output(cmd, shell=True).strip()
-            if verb: print lines
+            if self.verb: print lines
             file_cnt = int(lines.split()[0])
             f_msg = "[WARNING; NOT ENUGH LOGFILES!]"
             if file_cnt >= expected_file_cnt: f_msg = "ok"
@@ -1045,7 +1071,8 @@ def main():
 
     cwd = os.getcwd()
     hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
-                      allow_overwrite=args.allow_overwrite, dry_run=args.dry_run)
+                      allow_overwrite=args.allow_overwrite, dry_run=args.dry_run,
+                      verb=args.verb)
     if args.dry_run:
         print "[I] all done with checks."
         return
@@ -1056,7 +1083,7 @@ def main():
         hdlr.init_agents()     # spawn agents
         hdlr.run_agents()      # connect handlers to agents
         if args.verb:
-            hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.pids))
+            hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.get_pids()))
 
         hdlr.wait_for_sim()    # main part to exec simulation
     except KeyboardInterrupt:
