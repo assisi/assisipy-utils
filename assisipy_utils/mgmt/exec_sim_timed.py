@@ -353,8 +353,8 @@ class SimHandler(object):
             prj_name = os.path.splitext(os.path.basename(self.config['PRJ_FILE']))[0]
             sandbox_dir = prj_name + '_sandbox'
             src = os.path.join(depdir, sandbox_dir)
-            dst = os.path.join(self.archdir, sandbox_dir)
-            print "[I] will copy from {} to {}  ".format(src, dst)
+            dst = os.path.join(self.archdir, "dep_sandbox")# sandbox_dir)
+            print _C_ERR + "[I] will copy \n\tfrom {}\n\tto {}  ".format(src, dst)
             try:
                 self.copytree(src, dst)
             except IOError as e:
@@ -428,6 +428,9 @@ class SimHandler(object):
         ''' copy a directory, recursively'''
         self.disp_cmd_to_exec("cp -pr {} {}".format(src, dst))
         # see http://stackoverflow.com/a/12514470
+        # and also https://stackoverflow.com/a/13814557
+        if not os.path.exists(dst):
+            os.makedirs(dst)
         for item in os.listdir(src):
             s = os.path.join(src, item)
             d = os.path.join(dst, item)
@@ -819,8 +822,34 @@ class SimHandler(object):
         self.cd(wd)
         dply_cmd = "{} {}".format(self.TOOL_DEPLOY, self.config['PRJ_FILE'])
         self.disp_cmd_to_exec(dply_cmd)
-        p2 = wrapped_subproc(DO_TEST, dply_cmd, stdout=subprocess.PIPE, shell=True)
+        p2 = wrapped_subproc(DO_TEST, dply_cmd, shell=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, )
+
         p2.wait()
+        this_pid = p2.pid
+        out, err = p2.communicate()
+        # rest goes to logfile.
+        _fn = os.path.join(
+            self.stagelogdir, 'deploy.{}.stdout'.format(this_pid))
+        with open(_fn, 'w') as f:
+            f.writelines(out)
+
+        if err is not None and len(err):
+            _fn = os.path.join(
+                self.stagelogdir, 'deploy.{}.stderr'.format(this_pid))
+            with open(_fn, 'w') as f:
+                f.writelines(err)
+
+            ei, E = utils.chunk_text_by_blankline(err)
+            level = 'W'
+            if "error" in err.lower(): level = 'E'
+            self.disp_msg(
+                "{} warning/error entries in 'deploy' stage".format(ei),
+                level=level)
+            if self.verb > 0:
+                for k, v in E.items():
+                    print "{}:\t".format(k), _C_WARNING + "\n".join(v) + _C_ENDC
 
         self._deployed = True
 
@@ -831,6 +860,12 @@ class SimHandler(object):
             self._arch_dep_sandbox()
         pass
 
+    #{{{
+
+
+    #}}}
+
+
     def calib_casus(self):
         '''
         for now not separated, so here we simply start the casu
@@ -840,16 +875,21 @@ class SimHandler(object):
         '''
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
         self.cd(wd)
-        # non-blocking
 
+        # non-blocking
         casu_cmd = "{} {}".format(self.TOOL_CASU_EXEC, self.config['PRJ_FILE'])
         outf = open(os.path.join(self.logdir, "casu_stdout.log"), 'w')
+
+        # we can't know pid before the process is started; accept this one as-is
+        std_err_file = open(os.path.join(self.stagelogdir, "assisirun.stderr"), 'w')
+
         self.disp_cmd_to_exec(casu_cmd + "> {}".format(outf.name))
-        p1 = wrapped_subproc(DO_TEST,  casu_cmd, stdout=outf,
+        p1 = wrapped_subproc(DO_TEST,  casu_cmd, stdout=outf, stderr=std_err_file,
                 shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
         self._add_pid_file(p1)
         self.f_handles.append(outf)
+        self.f_handles.append(std_err_file)
 
         self.disp_cmd_to_exec("sleep {}".format(self.calib_timeout))
         time.sleep(self.calib_timeout)
@@ -1007,15 +1047,20 @@ class SimHandler(object):
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              shell=True)
-        p2.wait()
+        p2.wait() # execute command
+        this_pid = p2.pid
         # now capture the output,
         out, err = p2.communicate()
         # rest goes to logfile.
-        with open(os.path.join(self.stagelogdir, 'collect_logs.stdout'), 'w') as f:
+        _fn = os.path.join(
+            self.stagelogdir, 'collect_logs.{}.stdout'.format(this_pid))
+        with open(_fn, 'w') as f:
             f.writelines(out)
 
         if len(err):
-            with open(os.path.join(self.stagelogdir, 'collect_logs.stderr'), 'w') as f:
+            _fn = os.path.join(
+                self.stagelogdir, 'collect_logs.{}.stderr'.format(this_pid))
+            with open(_fn, 'w') as f:
                 f.writelines(err)
 
             ei, E = utils.chunk_text_by_blankline(err)
