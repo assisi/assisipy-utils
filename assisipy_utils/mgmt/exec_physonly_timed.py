@@ -33,14 +33,19 @@ def main():
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
     parser.add_argument('--allow-overwrite', action='store_true')
+    parser.add_argument('-S', '--dry-run', action='store_true')
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
     #
 
     cwd = os.getcwd()
     hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
-                      allow_overwrite=args.allow_overwrite)
+                      allow_overwrite=args.allow_overwrite, dry_run=args.dry_run)
     hdlr.expt_type = "experiment"
+
+    if args.dry_run:
+        print "[I] all done with checks."
+        return
 
     try:
         hdlr.phys_pre_calib_setup() # initialise - jst deployment and checks

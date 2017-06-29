@@ -353,8 +353,8 @@ class SimHandler(object):
             prj_name = os.path.splitext(os.path.basename(self.config['PRJ_FILE']))[0]
             sandbox_dir = prj_name + '_sandbox'
             src = os.path.join(depdir, sandbox_dir)
-            dst = os.path.join(self.archdir, "dep_sandbox")# sandbox_dir)
-            print _C_ERR + "[I] will copy \n\tfrom {}\n\tto {}  ".format(src, dst)
+            dst = os.path.join(self.archdir, "sandbox_dep")# sandbox_dir)
+            #print _C_ERR + "[I] will copy \n\tfrom {}\n\tto {}  ".format(src, dst)
             try:
                 self.copytree(src, dst)
             except IOError as e:
