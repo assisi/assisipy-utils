@@ -398,7 +398,7 @@ class TestCommConfig(object):
         self.validate_config()
         # simulation needs - simulator, sim.py deploy, assisirun.py
         pidfile = "/tmp/pg_pid_aput_tc" # somewhat unique name
-        graph_file = "results_{}.pdf".format("")
+        graph_file = "results_{}.pdf".format(self.proj_name)
 
         print "\n" + "="*75
         print "--- execute these commands to run full test and graph results ---"
@@ -431,11 +431,14 @@ class TestCommConfig(object):
             if self.simcmds:
                 print "kill -15 `cat {}`".format(pidfile)
 
-            print "collect_data.py {}".format(self.out_project_file)
+            print "collect_data.py --clean {}".format(self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
+            testtime_file = "ct_starttime.txt"
             print 'find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep -v ^# > {}'.format(datadir, "{}", msg_file)
-            print "show_assisi_dep_test {} -m {} --show-hosts".format(self.out_project_file, msg_file)
+            print '''find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep started | cut -d' ' -f2 | sort -n | tail -n1 > {}'''.format(datadir, "{}", testtime_file)
+
+            print "show_assisi_dep_test {} -m {} -tf {} --show-hosts".format(self.out_project_file, msg_file, testtime_file)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
             print "neato -Tpdf {}.layout > {}".format(
