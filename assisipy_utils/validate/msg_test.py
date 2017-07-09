@@ -11,11 +11,9 @@ import yaml
 import pygraphviz as pgv
 
 
-# VERSION 0.2
+# VERSION 0.3
 
 DO_LOG=False
-SYNC_PERIOD = 10 # maybe a minute is better but for testing in sim shorter ok
-INTERVAL = 8.0
 ERR = '\033[41m'
 BLU = '\033[34m'
 ENDC = '\033[0m'
@@ -172,7 +170,8 @@ class TestMsgChannels(object):
     TSTR_FMT = "%Y/%m/%d-%H:%M:%S-%Z"
 
     #{{{ init
-    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None, timeout=50.0):
+    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None, 
+            timeout=50.0, sync_period=10.0, interval=6.0):
 
         self._rtc_pth, self._rtc_fname = os.path.split(casu_name)
         if self._rtc_fname.endswith('.rtc'):
@@ -181,7 +180,9 @@ class TestMsgChannels(object):
             self.name = self._rtc_fname
 
         self.verb = 1
-        self.timeout = timeout
+        self.timeout     = timeout
+        self.interval    = interval
+        self.sync_period = sync_period
         self.nbg = nbg
         self.read_interactions()
 
@@ -313,9 +314,9 @@ class TestMsgChannels(object):
         '''
 
         d = datetime.datetime.now()
-        while d.second % SYNC_PERIOD > 1:
+        while d.second % self.sync_period > 1:
             print "{}: remainder is {}".format(
-                self.name, SYNC_PERIOD - (d.second % SYNC_PERIOD)), d.strftime("%c")
+                self.name, self.sync_period - (d.second % self.sync_period)), d.strftime("%c")
             time.sleep(0.9)
             d = datetime.datetime.now()
     #}}}
@@ -377,7 +378,7 @@ class TestMsgChannels(object):
         # 3. sleep a bit.
 
 
-        self.delay_secs = INTERVAL * self.delay_steps
+        self.delay_secs = self.interval * self.delay_steps
         self.emitted = False
 
         # first do a quick get/set test and write to log.
@@ -459,12 +460,15 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', type=str, default=None)
     parser.add_argument('--nbg', type=str, default=None)
     parser.add_argument('--timeout', type=float, default=60.0)
+    parser.add_argument('--sync_period', type=float, default=10.0)
+    parser.add_argument('--interval', type=float, default=6.0)
     parser.add_argument('--delay', type=int, required=True,
                         help="how many periods to wait before emitting")
     args = parser.parse_args()
 
     c = TestMsgChannels(args.name, logname=args.output, delay=args.delay,
-                        nbg=args.nbg, timeout=args.timeout)
+                        nbg=args.nbg, timeout=args.timeout, 
+                        sync_period=args.sync_period, interval=args.interval,)
 
     if c.verb > 0: print "Msg test - connected to {}".format(c.name)
     try:

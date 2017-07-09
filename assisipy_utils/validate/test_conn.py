@@ -32,17 +32,22 @@ class TestCommConfig(object):
     """
 
     #{{{ initialiser
-    def __init__(self, project_file_name, testlinks=True, simcmds=False, timeout=60.0):
+    def __init__(self, project_file_name, testlinks=True, simcmds=False, 
+            timeout=60.0, sync_period=None, interval=None):
         """
         Parses the configuration files and initializes internal data structures.
         """
         self.proj_name = os.path.splitext(os.path.basename(project_file_name))[0]
-        self.arena    = {}
-        self.dep      = {}
-        self.nbg_file = None
-        self.TESTLINK = testlinks
-        self.simcmds  = simcmds
-        self.timeout  = timeout
+        self.arena       = {}
+        self.dep         = {}
+        self.nbg_file    = None
+        self.TESTLINK    = testlinks
+        self.simcmds     = simcmds
+        self.timeout     = timeout
+        self.sync_period = sync_period
+        self.interval    = interval
+        if self.interval is None:
+            self.interval = 5.25
 
         self.project_root = os.path.dirname(os.path.abspath(project_file_name))
         self.sandbox_dir = self.proj_name + '_commconfig' + '_sandbox'
@@ -96,7 +101,8 @@ class TestCommConfig(object):
         # STILL don't have an estimated duration since STILL didn't parse 
         # the nbg file and look for #outlinks (.successors?) 
         # so for now just "know" that the interval is 7s
-        total_duration= 7.0 * num_nodes
+        # LAZY way to "know" is by defining externally, for now. interval
+        total_duration= self.interval * num_nodes
         if total_duration > self.timeout:
             warn_str = "[E] defined timeout of {:.1f} is likely too short - expected {}s".format(self.timeout, total_duration)
             # should this be a fatal error? I think not, so just warn for now
@@ -159,7 +165,17 @@ class TestCommConfig(object):
                     # one delay step per casu.
                     testdepinfo['args'] += ['--nbg {}'.format(self.nbg_file)]
                     if self.timeout is not None:
-                        testdepinfo['args'] += ['--timeout {}'.format(self.timeout)]
+                        testdepinfo['args'] += ['--timeout {}'.format(
+                            self.timeout)]
+
+                    if self.interval is not None:
+                        testdepinfo['args'] += ['--interval {}'.format(
+                            self.interval)]
+
+                    if self.sync_period is not None:
+                        testdepinfo['args'] += ['--sync_period {}'.format(
+                            self.sync_period)]
+
 
                     testdepinfo['extra'] = [self.nbg_file, ]
                     testdepinfo['results'] = ['*.log']
@@ -376,6 +392,10 @@ def main():
     # TODO: This is fully implemented yet!
     parser.add_argument('--timeout', type=float, default=60.0, 
             help="explicitly set the message test runtime")
+    parser.add_argument('--sync_period', type=float, default=None,
+            help="how long for all casus to wait to synchronise (due to variability in deployment duration across different bbgs")
+    parser.add_argument('--interval', type=float, default=None, 
+            help="duration to wait between starting each casu test")
     parser.add_argument('--layer', help='Name of single layer to action', default='all')
     parser.add_argument('-na', '--skip-annotate', action='store_true',
             help='annotate graph or solely visual test',)
@@ -388,7 +408,9 @@ def main():
         args.annotate = True
 
     project = TestCommConfig(args.project, testlinks=args.links, 
-            simcmds=args.use_simulator, timeout=args.timeout)
+            simcmds=args.use_simulator, timeout=args.timeout,
+            sync_period=args.sync_period, interval=args.interval)
+
     project.validate_config()
     project.prep()
     project.check_links()
