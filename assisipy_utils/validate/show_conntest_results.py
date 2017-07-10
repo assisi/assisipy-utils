@@ -13,6 +13,7 @@ This is an example usage of the validate.TopoGeomGraph class, extending to:
 '''
 from assisipy_utils import validate
 from assisipy_utils import tool_version
+import os
 
 import argparse
 
@@ -30,6 +31,8 @@ def main():
     parser.add_argument('-o', '--outfile', help='name to generate output graph in', default=None)
     parser.add_argument('-v', '--verb', action='store_true', help="be verbose")
     parser.add_argument('-sh', '--show-hosts', action='store_true', help="include hostname annotations in the output graph")
+    parser.add_argument("-tf", "--time_file", type=str, default=None,
+                        help="file containing time of the experiment, used in graph label")
     parser.add_argument("-m", "--msg_file", type=str, default=None,
                         help="csv of msging test results")
 
@@ -53,6 +56,16 @@ def main():
     # add extra host info, but not before all the checks are done
     if args.show_hosts:
         TGG.add_bbg_annotation()
+
+    l_time = ""
+    if args.time_file is not None:
+        with open(args.time_file) as f:
+            l_time = f.readline().strip()
+
+    l_proj = os.path.splitext(os.path.basename(args.project))[0]
+
+    TGG.DG.graph_attr['label'] = "{}\ntested at {}".format(l_proj, l_time)
+    #G.get_node(node).attr['label'] = label
     # generate new graph, with extra info.
     TGG.write()
 

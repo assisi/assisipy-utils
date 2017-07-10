@@ -26,23 +26,79 @@ ERR     = '\033[41m'
 BLU     = '\033[34m'
 OKGREEN = '\033[92m'
 ENDC    = '\033[0m'
+
+#{{{ various notes
+'''
+how to ensure a command starts on a rounded cycle?
+
+in bash, commands used to debug.
+
+#!/bin/sh
+
+RES=${1:-10}
+# say when to wait until
+now=$(date +%s)
+# we want to modulo to a specific resolution, e.g. 10s
+# so we round to most recent (already passed) multiple of that
+# then add one 
+# and that is our sync time
+prevq=$((${now}/${RES}))
+part_elap=$((${now}%${RES}))
+prev=$((prevq * ${RES}))
+next=$((prev + ${RES}))
+dff=$((now - prev))
+dly=$((${RES}-${dff}))
+
+dprev=$(date -u -d @${prev} +"%D %T")
+dnow=$(date -u -d @${now} +"%D %T")
+dnext=$(date -u -d @${next} +"%D %T")
+
+echo "  now is ${now} (${dnow}),\n  was    ${prev} (${dprev}) "
+echo "  --> (${dff}s) since then || ${part_elap} "
+echo "  next one will be at ${dnext}. We wait for ${dly}s"
+
+if we want to have the countdown visualised
+for i in `seq ${dly} -1 1`; do sleep 1; n2=$(date +"%T"); printf "\r ${i}s $n2 "; done  
+  (or maybe just ${i}s until launch @ ${dnext} )
+
+
+
+
+'''
+# so what we need is 
+#RES=[var from python]; now=$(date +%s); #part_elap=$((${now}%${RES}))
+#dly=$((${RES} - ${part_elap} ))
+#for i in $(seq ${dly} -1 1) ; do sleep 1; printf "\r ${i}s until launch"; done
+
+#sleep for ${RES} - part_elap sec
+# 
+#}}}
+
 class TestCommConfig(object):
     """
     Class that generates .dep files and sandboxes for the connection validation
     """
 
     #{{{ initialiser
-    def __init__(self, project_file_name, testlinks=True, simcmds=False, timeout=60.0):
+    def __init__(self, project_file_name, testlinks=True, simcmds=False, 
+            timeout=60.0, sync_period=None, interval=None):
         """
         Parses the configuration files and initializes internal data structures.
         """
         self.proj_name = os.path.splitext(os.path.basename(project_file_name))[0]
-        self.arena    = {}
-        self.dep      = {}
-        self.nbg_file = None
-        self.TESTLINK = testlinks
-        self.simcmds  = simcmds
-        self.timeout  = timeout
+        self.arena       = {}
+        self.dep         = {}
+        self.nbg_file    = None
+        self.TESTLINK    = testlinks
+        self.simcmds     = simcmds
+        self.timeout     = timeout
+        self.sync_period = sync_period
+        if self.sync_period is None:
+            self.sync_period = 10
+        self.interval    = interval
+        if self.interval is None:
+            self.interval = 5.25
+        self.auto_delay = True
 
         self.project_root = os.path.dirname(os.path.abspath(project_file_name))
         self.sandbox_dir = self.proj_name + '_commconfig' + '_sandbox'
@@ -96,7 +152,8 @@ class TestCommConfig(object):
         # STILL don't have an estimated duration since STILL didn't parse 
         # the nbg file and look for #outlinks (.successors?) 
         # so for now just "know" that the interval is 7s
-        total_duration= 7.0 * num_nodes
+        # LAZY way to "know" is by defining externally, for now. interval
+        total_duration= self.interval * num_nodes
         if total_duration > self.timeout:
             warn_str = "[E] defined timeout of {:.1f} is likely too short - expected {}s".format(self.timeout, total_duration)
             # should this be a fatal error? I think not, so just warn for now
@@ -159,7 +216,17 @@ class TestCommConfig(object):
                     # one delay step per casu.
                     testdepinfo['args'] += ['--nbg {}'.format(self.nbg_file)]
                     if self.timeout is not None:
-                        testdepinfo['args'] += ['--timeout {}'.format(self.timeout)]
+                        testdepinfo['args'] += ['--timeout {}'.format(
+                            self.timeout)]
+
+                    if self.interval is not None:
+                        testdepinfo['args'] += ['--interval {}'.format(
+                            self.interval)]
+
+                    if self.sync_period is not None:
+                        testdepinfo['args'] += ['--sync_period {}'.format(
+                            self.sync_period)]
+
 
                     testdepinfo['extra'] = [self.nbg_file, ]
                     testdepinfo['results'] = ['*.log']
@@ -331,7 +398,7 @@ class TestCommConfig(object):
         self.validate_config()
         # simulation needs - simulator, sim.py deploy, assisirun.py
         pidfile = "/tmp/pg_pid_aput_tc" # somewhat unique name
-        graph_file = "results_{}.pdf".format("")
+        graph_file = "results_{}.pdf".format(self.proj_name)
 
         print "\n" + "="*75
         print "--- execute these commands to run full test and graph results ---"
@@ -345,18 +412,33 @@ class TestCommConfig(object):
             print "sim.py {}".format(self.out_project_file)
 
         print "deploy.py {}".format(self.out_project_file)
-        print "assisirun.py {}".format(self.out_project_file)
+        # HERE: we put in a delay to start 1s after the sync_period finish
+        # This means that the assisirun command has the entire period to 
+        # complete, if we launch just at the start of one period. See notes 
+        # above for more detailed (bash) commands used in debugging
+        if self.auto_delay:
+            calc='''RES={}; now=$(date +%s); rmdr=$((${{now}} % ${{RES}})); dly=$((${{RES}} - ${{rmdr}})); '''.format(int(self.sync_period))
+            waitloop='''for i in $(seq ${{dly}} -1 1); do sleep 1; printf "\\r ${{i}}s until launch"; done'''.format() # format needed for the {{}} to be interpredte ok (sorry for inconsistency otherwise)
+
+            print "{} {} ; assisirun.py {}".format(
+                    calc, waitloop, self.out_project_file)
+        else:
+            print "assisirun.py {}".format(self.out_project_file)
+
         print "# wait for approx {}s".format(self.timeout)
 
         if annotate:
             if self.simcmds:
                 print "kill -15 `cat {}`".format(pidfile)
 
-            print "collect_data.py {}".format(self.out_project_file)
+            print "collect_data.py --clean {}".format(self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
+            testtime_file = "ct_starttime.txt"
             print 'find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep -v ^# > {}'.format(datadir, "{}", msg_file)
-            print "show_assisi_dep_test {} -m {} --show-hosts".format(self.out_project_file, msg_file)
+            print '''find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep started | cut -d' ' -f2 | sort -n | tail -n1 > {}'''.format(datadir, "{}", testtime_file)
+
+            print "show_assisi_dep_test {} -m {} -tf {} --show-hosts".format(self.out_project_file, msg_file, testtime_file)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
             print "neato -Tpdf {}.layout > {}".format(
@@ -376,6 +458,10 @@ def main():
     # TODO: This is fully implemented yet!
     parser.add_argument('--timeout', type=float, default=60.0, 
             help="explicitly set the message test runtime")
+    parser.add_argument('--sync_period', type=float, default=None,
+            help="how long for all casus to wait to synchronise (due to variability in deployment duration across different bbgs")
+    parser.add_argument('--interval', type=float, default=None, 
+            help="duration to wait between starting each casu test")
     parser.add_argument('--layer', help='Name of single layer to action', default='all')
     parser.add_argument('-na', '--skip-annotate', action='store_true',
             help='annotate graph or solely visual test',)
@@ -388,7 +474,9 @@ def main():
         args.annotate = True
 
     project = TestCommConfig(args.project, testlinks=args.links, 
-            simcmds=args.use_simulator, timeout=args.timeout)
+            simcmds=args.use_simulator, timeout=args.timeout,
+            sync_period=args.sync_period, interval=args.interval)
+
     project.validate_config()
     project.prep()
     project.check_links()
