@@ -172,7 +172,7 @@ class SimHandler(object):
 
         # define tools - hard-coded!!! TODO: supply from where?
         self.TOOL_CASU_EXEC    = 'assisirun.py'
-        self.TOOL_SIMULATOR    = "assisi_playground"
+        self.TOOL_SIMULATOR    = self.config.get("SIMULATOR", "assisi_playground")
         self.TOOL_CASU_SPAWN   = "sim.py"
         self.TOOL_DEPLOY       = "deploy.py"
         self.TOOL_COLLECT_LOGS = "collect_data.py"
@@ -443,6 +443,43 @@ class SimHandler(object):
             else:
                 shutil.copy2(s, d)
 
+    #{{{ process stage outputs
+    def write_stage_stdout_log(self, out, stagename, this_pid):
+        '''
+        emit to file the standard output from a given stage
+        '''
+        _fn = os.path.join(
+            self.stagelogdir, '{}.{}.stdout'.format(stagename, this_pid))
+        with open(_fn, 'w') as f:
+            f.writelines(out)
+
+    def process_stage_error_log(self, err, stagename, this_pid, ):
+        '''
+        if there is output in stderr, 1) write to stagelog, and 2_ parse
+        the stderr output from a given subprocess execution.
+        If there are errors indicated in the output, count and report how
+        many (use blank lines to separate)
+        '''
+        if err is not None and len(err):
+            _fn = os.path.join(
+                self.stagelogdir, '{}.{}.stderr'.format(stagename, this_pid))
+            with open(_fn, 'w') as f:
+                f.writelines(err)
+
+            ei, E = utils.chunk_text_by_blankline(err)
+            level = 'W'
+            if "error" in err.lower(): level = 'E'
+            self.disp_msg(
+                "{} warning/error entries in '{}' stage".format(ei, stagename),
+                level=level)
+            if self.verb > 0:
+                for k, v in E.items():
+                    print "{}:\t".format(k), _C_WARNING + "\n".join(v) + _C_ENDC
+        pass
+
+
+
+    #}}}
 
     #}}}
 
@@ -786,8 +823,15 @@ class SimHandler(object):
             spwn_casus += " " + sim_extra
 
             self.disp_cmd_to_exec(spwn_casus)
-            p2 = wrapped_subproc(DO_TEST, spwn_casus, stdout=subprocess.PIPE, shell=True)
+            p2 = wrapped_subproc(
+                DO_TEST, spwn_casus, shell=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
             p2.wait()
+            this_pid = p2.pid
+            out, err = p2.communicate()
+            self.write_stage_stdout_log( out, "sim", this_pid)
+            self.process_stage_error_log(err, "sim", this_pid)
+
 
         self.deploy()
 
@@ -830,26 +874,8 @@ class SimHandler(object):
         this_pid = p2.pid
         out, err = p2.communicate()
         # rest goes to logfile.
-        _fn = os.path.join(
-            self.stagelogdir, 'deploy.{}.stdout'.format(this_pid))
-        with open(_fn, 'w') as f:
-            f.writelines(out)
-
-        if err is not None and len(err):
-            _fn = os.path.join(
-                self.stagelogdir, 'deploy.{}.stderr'.format(this_pid))
-            with open(_fn, 'w') as f:
-                f.writelines(err)
-
-            ei, E = utils.chunk_text_by_blankline(err)
-            level = 'W'
-            if "error" in err.lower(): level = 'E'
-            self.disp_msg(
-                "{} warning/error entries in 'deploy' stage".format(ei),
-                level=level)
-            if self.verb > 0:
-                for k, v in E.items():
-                    print "{}:\t".format(k), _C_WARNING + "\n".join(v) + _C_ENDC
+        self.write_stage_stdout_log( out, "deploy", this_pid)
+        self.process_stage_error_log(err, "deploy", this_pid)
 
         self._deployed = True
 
@@ -860,10 +886,6 @@ class SimHandler(object):
             self._arch_dep_sandbox()
         pass
 
-    #{{{
-
-
-    #}}}
 
 
     def calib_casus(self):
