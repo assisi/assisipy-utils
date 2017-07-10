@@ -766,10 +766,20 @@ class SimHandler(object):
                 self.pg_img_dir)
 
         self.disp_cmd_to_exec(pg_cmd, bg=True)
-        p1 = wrapped_subproc(DO_TEST, pg_cmd, stdout=subprocess.PIPE,
-                shell=True, preexec_fn=os.setsid)
+        # setup files for logging output.
+        _stage = os.path.splitext(os.path.basename(self.TOOL_SIMULATOR))[0]
+        f_simulator_stdout = open(
+            os.path.join( self.stagelogdir, "{}.stdout".format(_stage)), 'w')
+        f_simulator_stderr = open(
+            os.path.join( self.stagelogdir, "{}.stderr".format(_stage)), 'w')
+
+        p1 = wrapped_subproc(DO_TEST, pg_cmd, stdout=f_simulator_stdout,
+                             stderr=f_simulator_stderr,
+                             shell=True, preexec_fn=os.setsid)
         self.p_handles.append(p1)
         self._add_pid_file(p1)
+        self.f_handles.append(f_simulator_stdout)
+        self.f_handles.append(f_simulator_stderr)
 
         # sleep a bit for simulator to launch before attempting to connect to it
         self.disp_cmd_to_exec("sleep {}".format(2.0))
@@ -1026,20 +1036,28 @@ class SimHandler(object):
                 self.copyfile(f, pth)
 
 
-
-
-
         # then run all with a single handler
         if len(exec_listings):
             _el = " ".join(str(_e) for _e in exec_listings)
             agent_cmd = "{} -ol {} --logpath {}".format(
                 self.TOOL_EXEC_AGENTS, _el, self.logdir,)
                 #self.TOOL_EXEC_AGENTS, data['obj_listing'], self.logdir,)
+
+            #
+            # setup files for logging output.
+            _stage = os.path.splitext(os.path.basename(self.TOOL_EXEC_AGENTS))[0]
+            f_stdout = open(
+                os.path.join( self.stagelogdir, "{}.stdout".format(_stage)), 'w')
+            f_stderr = open(
+                os.path.join( self.stagelogdir, "{}.stderr".format(_stage)), 'w')
+
             self.disp_cmd_to_exec(agent_cmd, bg=True)
-            p1 = wrapped_subproc(DO_TEST, agent_cmd, stdout=subprocess.PIPE,
-                                 shell=True, preexec_fn=os.setsid)
+            p1 = wrapped_subproc(DO_TEST, agent_cmd, stdout=f_stdout,
+                                 stderr=f_stderr, shell=True, preexec_fn=os.setsid)
             self.p_handles.append(p1)
             self._add_pid_file(p1)
+            self.f_handles.append(f_stdout)
+            self.f_handles.append(f_stderr)
 
     def wait_for_expt(self):
         ''' logical rename for other non-simulation based users of this class'''
