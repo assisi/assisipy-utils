@@ -174,8 +174,9 @@ class SimHandler(object):
         self.TOOL_CASU_EXEC    = 'assisirun.py'
         self.TOOL_SIMULATOR    = self.config.get("SIMULATOR", "assisi_playground")
         self.TOOL_CASU_SPAWN   = "sim.py"
-        self.TOOL_DEPLOY       = "deploy.py"
-        self.TOOL_COLLECT_LOGS = "collect_data.py"
+        self.TOOL_DEPLOY       = self.config.get("DEPLOY_TOOL", "deploy.py")
+        self.TOOL_COLLECT_LOGS = self.config.get("COLLECT_LOG_TOOL", "collect_data.py")
+
 
         self.ARCHIVE_BEHAV_SCRIPT = True
         self.ARCHIVE_SPAWNER      = True
@@ -801,8 +802,15 @@ class SimHandler(object):
 
             spwn_cmd = "{} -l {} -o {}".format(_ws, pop, arena_bounds_file)
             self.disp_cmd_to_exec(spwn_cmd)
-            p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
+            p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, shell=True)
             p2.wait()
+
+            this_pid = p2.pid
+            out, err = p2.communicate()
+            _stage = "spawn_walls_{}".format(pop)
+            self.write_stage_stdout_log( out, _stage, this_pid)
+            self.process_stage_error_log(err, _stage, this_pid)
 
             if self.ARCHIVE_SPAWNER and _ws is not None:
                 if os.path.isfile(_ws):
@@ -958,8 +966,14 @@ class SimHandler(object):
                 data['size'],
                 data.get('behav_script', "None"),)
             self.disp_cmd_to_exec(spwn_cmd)
-            p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE, shell=True)
+            p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, shell=True)
             p2.wait()
+            this_pid = p2.pid
+            out, err = p2.communicate()
+            _stage = "spawn_agents_{}".format(pop)
+            self.write_stage_stdout_log( out, _stage, this_pid)
+            self.process_stage_error_log(err, _stage, this_pid)
             data['agents_spawned'] = True
             spawn_count += 1
 
@@ -1074,26 +1088,8 @@ class SimHandler(object):
         # now capture the output,
         out, err = p2.communicate()
         # rest goes to logfile.
-        _fn = os.path.join(
-            self.stagelogdir, 'collect_logs.{}.stdout'.format(this_pid))
-        with open(_fn, 'w') as f:
-            f.writelines(out)
-
-        if len(err):
-            _fn = os.path.join(
-                self.stagelogdir, 'collect_logs.{}.stderr'.format(this_pid))
-            with open(_fn, 'w') as f:
-                f.writelines(err)
-
-            ei, E = utils.chunk_text_by_blankline(err)
-            level = 'W'
-            if "error" in err.lower(): level = 'E'
-            self.disp_msg(
-                "{} warning/error entries in 'collect_logs' stage".format(ei),
-                level=level)
-            if self.verb > 0:
-                for k, v in E.items():
-                    print "{}:\t".format(k), _C_WARNING + "\n".join(v) + _C_ENDC
+        self.write_stage_stdout_log( out, "collect_logs", this_pid)
+        self.process_stage_error_log(err, "collect_logs", this_pid)
 
         #TODO:  display a summary; accumulate warnings and error count
 
