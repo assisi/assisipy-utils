@@ -1,6 +1,11 @@
 Change and release log
 ======================
 
+0.8.1
+-----
+
+* simulation config parameters now reach the tools
+
 0.8.0
 -----
 
