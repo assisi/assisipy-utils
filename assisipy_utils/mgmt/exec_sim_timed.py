@@ -126,7 +126,15 @@ def check_files_exist(file_dict, report=False):
 
     return e
 
+def chunker(seq, size):
+    '''
+    return an iterator over the sequence with `size` elements in each slice
+    from  https://stackoverflow.com/a/434328
+    '''
+    return (seq[pos:pos + size] for pos in xrange(0, len(seq), size))
+
 #}}}
+
 
 #{{{ class - simulation handler
 class SimHandler(object):
@@ -187,7 +195,7 @@ class SimHandler(object):
         # 1. if dry-run, then we just check files exist etc
         # 2. otherwise, create archives, logfiles, etc
         if self.dry_run:
-            r = self.check_deployment_exists()
+            self.check_deployment_exists()
             # parse the dep file itself. (.nbg and .arena files don't specify other files)
             self.validate_depfile(True)
 
@@ -764,6 +772,13 @@ class SimHandler(object):
         if self.pg_img_dir is not None:
             pg_cmd += " --Output.img_path {}".format(
                 self.pg_img_dir)
+        # pass on any extra args to playground
+        _pg_args = self.config.get('playground_args', [])
+        for (arg, val) in chunker(_pg_args, 2):
+            if arg is "--Output.img_path":
+                continue
+            pg_cmd += " {} {} ".format(arg, val)
+
 
         self.disp_cmd_to_exec(pg_cmd, bg=True)
         # setup files for logging output.
