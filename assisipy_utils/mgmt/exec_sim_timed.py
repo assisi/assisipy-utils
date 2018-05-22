@@ -191,6 +191,7 @@ class SimHandler(object):
 
         self.project_root = os.path.dirname(os.path.abspath(self.conf_file))
 
+        self._check_sim_addrspec()
         # branch ere:
         # 1. if dry-run, then we just check files exist etc
         # 2. otherwise, create archives, logfiles, etc
@@ -212,7 +213,6 @@ class SimHandler(object):
         # other params we use to execute simulation
 
 
-
         # variables
         self.p_handles = []
         self.f_handles = []
@@ -226,6 +226,31 @@ class SimHandler(object):
         self._setup_cmdlog()
 
         self._arch_depconf()
+
+    def _check_sim_addrspec(self, ):
+        '''
+        if defined in config, include custom address for simulator
+        '''
+        self.CUSTOM_ADDRS = False
+        self.custom_subaddr = None
+        self.custom_pubaddr = None
+        if "SIM_HOST" in self.config:
+            ip = self.config['SIM_HOST'].get('addr')
+            sp = self.config['SIM_HOST'].get('sub')
+            pp = self.config['SIM_HOST'].get('pub')
+            if ip is None or sp is None or pp is None:
+                raise RuntimeError("[F] incomplete specification of sim_host")
+            self.CUSTOM_ADDRS = True
+
+            self.custom_pubaddr = "tcp://{}:{}".format(ip, pp)
+            self.custom_subaddr = "tcp://{}:{}".format(ip, sp)
+
+            if self.verb >1:
+                self.disp_msg("using custom simulator pubaddr: {}".format(self.custom_pubaddr))
+                self.disp_msg("using custom simulator subaddr: {}".format(self.custom_subaddr))
+
+
+        pass
 
     def _setup_archives(self):
         # default is to archive all, for now
@@ -746,7 +771,7 @@ class SimHandler(object):
 
     #{{{ main stages of expt execution
     #{{{ sim -only version for pre_calib_setup
-    def pre_calib_setup(self, ):
+    def pre_calib_setup(self, ): #noqa
         '''
         This stage involves
         - starting the playground
@@ -775,9 +800,15 @@ class SimHandler(object):
         # pass on any extra args to playground
         _pg_args = self.config.get('playground_args', [])
         for (arg, val) in chunker(_pg_args, 2):
-            if arg is "--Output.img_path":
+            if arg == "--Output.img_path":
                 continue
             pg_cmd += " {} {} ".format(arg, val)
+
+        # add in switches for custom addresses if defined
+        if self.CUSTOM_ADDRS:
+            pg_cmd += " --pub_addr {} --sub_addr {} ".format(
+                self.custom_pubaddr, self.custom_subaddr)
+
 
 
         self.disp_cmd_to_exec(pg_cmd, bg=True)
@@ -800,7 +831,7 @@ class SimHandler(object):
         self.disp_cmd_to_exec("sleep {}".format(2.0))
         time.sleep(2.0)
 
-        # we do walls here for each population
+        #{{{ we spawn walls here for each population
         _ag_data = self.config.get('agents', {})
         for pop, data in _ag_data.items():
         #for pop, data in self.config['agents'].items():
@@ -826,6 +857,11 @@ class SimHandler(object):
             data['arena_bounds_file'] = arena_bounds_file
 
             spwn_cmd = "{} -l {} -o {}".format(_ws, pop, arena_bounds_file)
+            # add in switches for custom addresses if defined (note that
+            # the HOST subaddr is the client/tool *pub* addr)
+            if self.CUSTOM_ADDRS:
+                spwn_cmd += " --pub-addr {} --sub-addr {} ".format(
+                    self.custom_subaddr, self.custom_pubaddr)
             self.disp_cmd_to_exec(spwn_cmd)
             p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, shell=True)
@@ -842,7 +878,9 @@ class SimHandler(object):
                     pth = os.path.join(self.archdir, pop)
                     self.mkdir(pth)
                     self.copyfile(_ws, pth)
+        #}}}
 
+        #{{{ spawn the casus
         #spwn_casus = "{} {}".format(self.TOOL_CASU_SPAWN, self.config['PRJ_FILE'])
         # TODO: until PR#39 is accepted, this needs to give the .arena file!
         a_file = None
@@ -855,6 +893,12 @@ class SimHandler(object):
             sim_extra = self.config.get('sim_args', "")
             spwn_casus += " " + sim_extra
 
+            # add in switches for custom addresses if defined (note that
+            # the HOST subaddr is the client/tool *pub* addr)
+            if self.CUSTOM_ADDRS:
+                spwn_casus += " --address {} --sub-addr {} ".format(
+                    self.custom_subaddr, self.custom_pubaddr)
+
             self.disp_cmd_to_exec(spwn_casus)
             p2 = wrapped_subproc(
                 DO_TEST, spwn_casus, shell=True,
@@ -865,6 +909,7 @@ class SimHandler(object):
             self.write_stage_stdout_log( out, "sim", this_pid)
             self.process_stage_error_log(err, "sim", this_pid)
 
+        #}}}
 
         self.deploy()
 
@@ -990,6 +1035,11 @@ class SimHandler(object):
                 _as, pop, obj_listing, data['arena_bounds_file'],
                 data['size'],
                 data.get('behav_script', "None"),)
+            # add in switches for custom addresses if defined (note that
+            # the HOST subaddr is the client/tool *pub* addr)
+            if self.CUSTOM_ADDRS:
+                spwn_cmd += " --pub-addr {} --sub-addr {} ".format(
+                    self.custom_subaddr, self.custom_pubaddr)
             self.disp_cmd_to_exec(spwn_cmd)
             p2 = wrapped_subproc(DO_TEST, spwn_cmd, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, shell=True)
