@@ -189,7 +189,8 @@ class SimHandler(object):
         self.ARCHIVE_BEHAV_SCRIPT = True
         self.ARCHIVE_SPAWNER      = True
 
-        self.project_root = os.path.dirname(os.path.abspath(self.conf_file))
+        self.project_root = os.path.dirname(
+            os.path.abspath(os.path.expanduser(self.conf_file)))
 
         self._check_sim_addrspec()
         # branch ere:
@@ -280,7 +281,9 @@ class SimHandler(object):
         _ld = "{}-{}_rpt{}".format(
                 self.config['PRJ_FILE'].split('.')[0],
                 self.label, self.rpt)
-        logdir = os.path.join(self.config['logbase'], _ld)
+        logbase = os.path.expanduser(self.config['logbase'])
+        logdir = os.path.join(logbase, _ld)
+        #logdir = os.path.join(self.config['logbase'], _ld)
 
         if os.path.exists(logdir):
             if not self.allow_overwrite:
