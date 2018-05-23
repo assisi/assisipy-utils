@@ -1250,6 +1250,12 @@ def main():
     hdlr.disp_msg("------------- -------------------- -------------")
     hdlr.done()
 
+
+    #print subprocess.check_output("stty")
+    subprocess.call(["stty", "sane"])
+    #print subprocess.check_output("stty")
+
+
 if __name__ == '__main__':
    main()
 
