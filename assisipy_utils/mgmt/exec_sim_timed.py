@@ -1150,7 +1150,6 @@ class SimHandler(object):
             self.disp_msg("  closing {}".format(lf.name))
             lf.close()
 
-
     def collect_logs(self, expected_file_cnt=None):
         '''
         retrieve all of the log files that the experiment or simulation
@@ -1165,17 +1164,24 @@ class SimHandler(object):
         cll_cmd = "{} {} --logpath {}".format( self.TOOL_COLLECT_LOGS,
             self.config['PRJ_FILE'], self.logdir)
         self.disp_cmd_to_exec(cll_cmd)
-        p2 = wrapped_subproc(DO_EXEC, cll_cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             shell=True)
-        p2.wait() # execute command
-        this_pid = p2.pid
-        # now capture the output,
-        out, err = p2.communicate()
-        # rest goes to logfile.
-        self.write_stage_stdout_log( out, "collect_logs", this_pid)
-        self.process_stage_error_log(err, "collect_logs", this_pid)
+        # NOTE: the collect_data script generates quite a lot of output
+        #       and this causes problems with subprocess.PIPE for files!
+        #       If the output is too big, it hangs!!! and the files don't
+        #       even get retrieved! TERRIBLE NEWS!
+        # == So this workaround uses real unix files to write the data to. ==
+        # can't get the pid of the process itself until it has already
+        # started, so for now just use generic name (one run _should_ only have
+        # one log anyway)
+        f_err = os.path.join(self.stagelogdir, "{}.stderr".format("collect_logs"))
+        f_out = os.path.join(self.stagelogdir, "{}.stdout".format("collect_logs"))
+        with open(f_err, 'w') as _fe, open(f_out, 'w') as _fo:
+            p2 = wrapped_subproc(DO_EXEC, cll_cmd,
+                                 #stdout=subprocess.PIPE,
+                                 #stderr=subprocess.PIPE,
+                                 stdout=_fo, stderr=_fe,
+                                 shell=True)
+            p2.wait() # execute command
+            #this_pid = p2.pid
 
         #TODO:  display a summary; accumulate warnings and error count
 
