@@ -24,6 +24,7 @@ from exec_sim_timed import SimHandler
 from exec_sim_timed import _C_ENDC, _C_OKBLUE
 from assisipy_utils import tool_version
 import argparse, os
+import subprocess
 
 
 def main():
@@ -48,26 +49,33 @@ def main():
         return
 
     try:
-        hdlr.phys_pre_calib_setup() # initialise - jst deployment and checks
-        hdlr.calib_casus()     # connect and timeout calibration (blocking)
-        if args.verb:
-            hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.pids))
 
-        hdlr.wait_for_expt()    # wait for experiment to complete
-    except KeyboardInterrupt:
-        hdlr.disp_msg("simln interrupted -- shutting down")
+        try:
+            hdlr.phys_pre_calib_setup() # initialise - jst deployment and checks
+            hdlr.calib_casus()     # connect and timeout calibration (blocking)
+            if args.verb:
+                hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.pids))
+
+            hdlr.wait_for_expt()    # wait for experiment to complete
+        except KeyboardInterrupt:
+            hdlr.disp_msg("simln interrupted -- shutting down")
 
 
-    hdlr.close_active_processes()
-    hdlr.close_logs()
-    hdlr.collect_logs()
+        hdlr.close_active_processes()
+        hdlr.close_logs()
+        hdlr.collect_logs()
 
-    hdlr.cd(cwd) # go back to original location
+        hdlr.cd(cwd) # go back to original location
 
-    hdlr.disp_msg("------------- Experiment finished! -------------")
-    hdlr.disp_msg(_C_OKBLUE + "Results are in {}".format(hdlr.logdir) + _C_ENDC)
-    hdlr.disp_msg("------------- -------------------- -------------")
-    hdlr.done()
+        hdlr.disp_msg("------------- Experiment finished! -------------")
+        hdlr.disp_msg(_C_OKBLUE + "Results are in {}".format(hdlr.logdir) + _C_ENDC)
+        hdlr.disp_msg("------------- -------------------- -------------")
+        hdlr.done()
+
+    finally:
+        # try to clean up the terminal even if assisirun broke it.
+        hdlr.disp_cmd_to_exec("stty sane", prestore=True)
+        subprocess.call(["stty", "sane"])
 
 if __name__ == '__main__':
    main()

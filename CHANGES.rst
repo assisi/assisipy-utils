@@ -4,7 +4,20 @@ Change and release log
 0.8.1
 -----
 
+New features
+
 * simulation config parameters now reach the tools
+
+* config file can specify explicit IP address and ports for the 
+  simulator instance in exec_sim_timed, and expected tools in the
+  flow receive the appropriate updates
+  (towards solving #14 but not complete due to .arena files)
+
+Issues resolved
+
+* paths in `exec_sim_timed` can include a ~. (closes #31)
+* terminal/console is useable after `exec_*_timed` (closes #35, independently
+  of assisipy#49)
 
 0.8.0
 -----

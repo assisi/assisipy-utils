@@ -1227,33 +1227,35 @@ def main():
         return
 
     try:
-        hdlr.pre_calib_setup() # initialise: playground, deploy, walls
-        hdlr.calib_casus()     # connect and timeout calibration (blocking)
-        hdlr.init_agents()     # spawn agents
-        hdlr.run_agents()      # connect handlers to agents
-        if args.verb:
-            hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.get_pids()))
 
-        hdlr.wait_for_sim()    # main part to exec simulation
-    except KeyboardInterrupt:
-        hdlr.disp_msg("simln interrupted -- shutting down")
+        try:
+            hdlr.pre_calib_setup() # initialise: playground, deploy, walls
+            hdlr.calib_casus()     # connect and timeout calibration (blocking)
+            hdlr.init_agents()     # spawn agents
+            hdlr.run_agents()      # connect handlers to agents
+            if args.verb:
+                hdlr.disp_msg("PIDs of persistent procs are {}".format(hdlr.get_pids()))
 
-
-    hdlr.close_active_processes()
-    hdlr.close_logs()
-    hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
-
-    hdlr.cd(cwd) # go back to original location
-
-    hdlr.disp_msg("------------- Simulation finished! -------------")
-    hdlr.disp_msg(_C_OKBLUE + "Results are in {}".format(hdlr.logdir) + _C_ENDC)
-    hdlr.disp_msg("------------- -------------------- -------------")
-    hdlr.done()
+            hdlr.wait_for_sim()    # main part to exec simulation
+        except KeyboardInterrupt:
+            hdlr.disp_msg("simln interrupted -- shutting down")
 
 
-    #print subprocess.check_output("stty")
-    subprocess.call(["stty", "sane"])
-    #print subprocess.check_output("stty")
+        hdlr.close_active_processes()
+        hdlr.close_logs()
+        hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
+
+        hdlr.cd(cwd) # go back to original location
+
+        hdlr.disp_msg("------------- Simulation finished! -------------")
+        hdlr.disp_msg(_C_OKBLUE + "Results are in {}".format(hdlr.logdir) + _C_ENDC)
+        hdlr.disp_msg("------------- -------------------- -------------")
+        hdlr.done()
+
+    finally:
+        hdlr.disp_cmd_to_exec("stty sane", prestore=True)
+        subprocess.call(["stty", "sane"])
+        #print subprocess.check_output("stty")
 
 
 if __name__ == '__main__':
