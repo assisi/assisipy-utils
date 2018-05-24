@@ -97,7 +97,8 @@ class TestCommConfig(object):
             self.sync_period = 10
         self.interval    = interval
         if self.interval is None:
-            self.interval = 5.25
+            if self.TESTLINK: self.interval = 5.25
+            else: self.interval = 2.0
         self.auto_delay = True
 
         self.project_root = os.path.dirname(os.path.abspath(project_file_name))
@@ -244,6 +245,7 @@ class TestCommConfig(object):
                     if self.sync_period is not None:
                         testdepinfo['args'] += ['--sync_period {}'.format(
                             self.sync_period)]
+                    testdepinfo['results'] = ['*.log']
 
                 main_dep[layer][casu] = testdepinfo
         #}}}
