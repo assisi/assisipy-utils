@@ -21,7 +21,7 @@ Rob Mills - BioISI, FCUL & ASSISIbf - May 2016
 
 
 from exec_sim_timed import SimHandler
-from exec_sim_timed import _C_ENDC, _C_OKBLUE
+from exec_sim_timed import _C_ENDC, _C_OKBLUE, _C_ERR, _C_OKGREEN
 from assisipy_utils import tool_version
 import argparse, os
 import subprocess
@@ -34,6 +34,7 @@ def main():
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
     parser.add_argument('--allow-overwrite', action='store_true')
+    parser.add_argument('--ignore-precheck', action='store_true')
     parser.add_argument('-S', '--dry-run', action='store_true')
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
@@ -41,11 +42,16 @@ def main():
 
     cwd = os.getcwd()
     hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
-                      allow_overwrite=args.allow_overwrite, dry_run=args.dry_run)
+                      allow_overwrite=args.allow_overwrite, dry_run=args.dry_run,
+                      ignore_precheck=args.ignore_precheck, verb=args.verb)
     hdlr.expt_type = "experiment"
 
+
     if args.dry_run:
-        print "[I] all done with checks."
+        print _C_OKGREEN + "[I] all done with checks." + _C_ENDC
+        return
+    if not hdlr.initialised_ok:
+        print _C_ERR + "[F] Problem with checks, not executing experiment." + _C_ENDC
         return
 
     try:
