@@ -12,8 +12,9 @@ Abstract : Simple library to enable/aid rendering of arena elements in
 '''
 
 
-from matplotlib.patches import Polygon #, Rectangle
+from matplotlib.patches import Polygon, Rectangle
 import matplotlib.pyplot as plt
+from transforms import Point, translate_group, rotate_group_about_ctr
 
 
 def poly_from_seq(seq, **kwargs):
@@ -36,3 +37,29 @@ def render_CASUs(casu_poses, ax=None, fc='w', mew=3):
         # print "scattering point at", p.x, p.y
         h.append (ax.scatter(x=p.x, y=p.y, marker='h', s=400, c=fc, linewidth=mew))
     return h
+
+def valid_area_to_rect(bounds, angle=0, **kwargs):
+    ''' just checking that I got the bounds in the right place post-transforms'''
+    bl, tr = bounds
+    # rectangle form is "bottom left, width, height
+    width  = tr[0] - bl[0]
+    height = tr[1] - bl[1]
+
+    # for some reason the age of MPL makes a difference (maybe?) as to whether
+    # rectangle can take an angle or not
+    #return Rectangle(bl, width=width, height=height, angle=angle, **kwargs)
+    return Rectangle(bl, width=width, height=height, **kwargs)
+
+def trans_valid_area_to_rect(bounds, trans, **kwargs):
+    ''' elaborated version that provides a rect in the transformed position '''
+    bl = Point(*bounds[0])
+    tr = Point(*bounds[1])
+    # apply transformation to the bounds
+    poly = [bl, Point(bl.x, tr.y), tr, Point(tr.x, bl.y)]
+    seq = [poly, ]
+    # transform the polygon
+    seq_tr = translate_group(
+            rotate_group_about_ctr(seq, trans.theta), trans.dx, trans.dy
+            )
+    return poly_from_seq(seq_tr[0], **kwargs)
+

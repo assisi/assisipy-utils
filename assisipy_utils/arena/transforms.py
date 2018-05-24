@@ -2,32 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from math import sin, cos
-from matplotlib.patches import Polygon, Rectangle
-
-def trans_valid_area_to_rect(bounds, trans, **kwargs):
-    ''' elaborated version that provides a rect in the transformed position '''
-    bl = Point(*bounds[0])
-    tr = Point(*bounds[1])
-    # apply transformation to the bounds
-    poly = [bl, Point(bl.x, tr.y), tr, Point(tr.x, bl.y)]
-    seq = [poly, ]
-    # transform the polygon
-    seq_tr = translate_group(
-            rotate_group_about_ctr(seq, trans.theta), trans.dx, trans.dy
-            )
-    return poly_from_seq(seq_tr[0], **kwargs)
-
-def valid_area_to_rect(bounds, angle=0, **kwargs):
-    ''' just checking that I got the bounds in the right place post-transforms'''
-    bl, tr = bounds
-    # rectangle form is "bottom left, width, height
-    width  = tr[0] - bl[0]
-    height = tr[1] - bl[1]
-
-    # for some reason the age of MPL makes a difference (maybe?) as to whether
-    # rectangle can take an angle or not
-    #return Rectangle(bl, width=width, height=height, angle=angle, **kwargs)
-    return Rectangle(bl, width=width, height=height, **kwargs)
 
 def translate_point(p, dx=0, dy=0):
     ''' translate point by the delta position dx, dy'''
@@ -37,9 +11,6 @@ def translate_seq(seq, dx=0, dy=0):
     ''' move several points by delta pos dx, dy. assumes input is a list of points'''
     return [translate_point(p, dx, dy) for p in seq]
 
-def poly_from_seq(seq, **kwargs):
-    pts = [(p.x, p.y) for p in seq]
-    return Polygon(pts, **kwargs)
 
 def xy_from_seq(seq):
     return [(p.x, p.y) for p in seq]
