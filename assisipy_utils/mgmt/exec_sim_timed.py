@@ -217,6 +217,10 @@ class SimHandler(object):
         # variables
         self.p_handles = []
         self.f_handles = []
+        self.coll_log_f_err = None
+        self.coll_log_f_out = None
+        self.cll_wd = None
+        self.cll_cmd = None
 
         self._cmd_idx = 0
         self._pre_cmdlog = [] # store any commands before log is opened
@@ -1172,9 +1176,11 @@ class SimHandler(object):
         # can't get the pid of the process itself until it has already
         # started, so for now just use generic name (one run _should_ only have
         # one log anyway)
-        f_err = os.path.join(self.stagelogdir, "{}.stderr".format("collect_logs"))
-        f_out = os.path.join(self.stagelogdir, "{}.stdout".format("collect_logs"))
-        with open(f_err, 'w') as _fe, open(f_out, 'w') as _fo:
+        self.coll_log_f_err = os.path.join(self.stagelogdir, "{}.stderr".format("collect_logs"))
+        self.coll_log_f_out = os.path.join(self.stagelogdir, "{}.stdout".format("collect_logs"))
+        self.cll_wd = wd
+        self.cll_cmd = cll_cmd
+        with open(self.coll_log_f_err, 'w') as _fe, open(self.coll_log_f_out, 'w') as _fo:
             p2 = wrapped_subproc(DO_EXEC, cll_cmd,
                                  #stdout=subprocess.PIPE,
                                  #stderr=subprocess.PIPE,
@@ -1196,6 +1202,28 @@ class SimHandler(object):
             f_msg = "[WARNING; NOT ENUGH LOGFILES!]"
             if file_cnt >= expected_file_cnt: f_msg = "ok"
             self.disp_msg("There are {} files/dirs in {} ({})".format(file_cnt, self.logdir, f_msg))
+
+    def err_msg_collect(self):
+        '''
+        this is invoked if the collect logs stage is killed for some reason.
+        '''
+        #_C_FAIL = '\033[91m'
+        print _C_FAIL
+        print "============================================================"
+        print "=========  ERROR -- COLLECT LOGS STAGE INCOMPLETE! ========="
+        print "=========  DATA LOSS POSSIBLE =============================="
+        print "=== the logs hsould have been here: ========================"
+        print self.coll_log_f_out
+        print self.coll_log_f_err
+        print "=== the command run was ===================================="
+        print "cd {}".format(self.cll_wd)
+        print self.cll_cmd
+        print "=== try to re-run manually to recover data  ================"
+        print "============================================================" + _C_ENDC
+
+
+        pass
+
 
     #}}}
 
@@ -1249,7 +1277,11 @@ def main():
 
         hdlr.close_active_processes()
         hdlr.close_logs()
-        hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
+        try:
+            hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
+        except KeyboardInterrupt:
+            hdlr.err_msg_collect()
+
 
         hdlr.cd(cwd) # go back to original location
 
