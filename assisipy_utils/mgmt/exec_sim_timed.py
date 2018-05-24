@@ -148,6 +148,7 @@ class SimHandler(object):
 
         '''
 
+        self.initialised_ok = False
         # store params
         self.label = label
         self.conf_file   = conf_file
@@ -156,6 +157,7 @@ class SimHandler(object):
         self.allow_overwrite = kwargs.get('allow_overwrite', False)
         self.dry_run = kwargs.get('dry_run', False)
         self.verb    = kwargs.get('verb', 0)
+        self._ignore_precheck_errors = kwargs.get('ignore_precheck', False)
 
         self._deployed = False
         self._expt_run = False
@@ -188,6 +190,8 @@ class SimHandler(object):
 
         self.ARCHIVE_BEHAV_SCRIPT = True
         self.ARCHIVE_SPAWNER      = True
+        self._cmd_idx = 0
+        self._pre_cmdlog = [] # store any commands before log is opened
 
         self.project_root = os.path.dirname(
             os.path.abspath(os.path.expanduser(self.conf_file)))
@@ -209,6 +213,21 @@ class SimHandler(object):
             # not sure how to exit the initialiser?
             return
 
+        # dep checked in --dry-run, but is so central that we do in std-run too
+        check_resp = self.check_deployment_exists()
+        if check_resp != CHECK_OK:
+            msg = """
+            [F] there were errors in the pre-run check.
+                try using the --dry-run option for more detailed info
+                if these errors are not relevant to your run, try using the
+                --ignore-precheck option.
+            """
+            if not self._ignore_precheck_errors:
+                self.disp_msg(msg, level='F')
+                return
+            else:
+                self.disp_msg(msg, level='W')
+
 
         self._setup_archives()
         # other params we use to execute simulation
@@ -222,8 +241,6 @@ class SimHandler(object):
         self.cll_wd = None
         self.cll_cmd = None
 
-        self._cmd_idx = 0
-        self._pre_cmdlog = [] # store any commands before log is opened
 
         # check whether the logdir exists already
         self._check_and_mk_logdir()
@@ -231,6 +248,8 @@ class SimHandler(object):
         self._setup_cmdlog()
 
         self._arch_depconf()
+
+        self.initialised_ok = True
 
     def _check_sim_addrspec(self, ):
         '''
@@ -618,6 +637,9 @@ class SimHandler(object):
         '''
         if self.depfile is None:
             return CHECK_FAILED_WARN
+
+        if not os.path.exists(self.depfile):
+            return CHECK_FAILED_FATAL
 
         d = yaml.load(open(self.depfile))
         i = 0
@@ -1248,6 +1270,7 @@ def main():
     parser.add_argument('-l', '--label', type=str, default='sim_')
     parser.add_argument('-r', '--rpt', type=int, default=None, required=True)
     parser.add_argument('--allow-overwrite', action='store_true')
+    parser.add_argument('--ignore-precheck', action='store_true')
     parser.add_argument('-S', '--dry-run', action='store_true')
     parser.add_argument('--verb', type=int, default=0,)
     args = parser.parse_args()
@@ -1267,9 +1290,12 @@ def main():
     cwd = os.getcwd()
     hdlr = SimHandler(conf_file=args.conf, label=args.label, rpt=args.rpt,
                       allow_overwrite=args.allow_overwrite, dry_run=args.dry_run,
-                      verb=args.verb)
+                      ignore_precheck=args.ignore_precheck, verb=args.verb)
     if args.dry_run:
-        print "[I] all done with checks."
+        print _C_OKGREEN + "[I] all done with checks." + _C_ENDC
+        return
+    if not hdlr.initialised_ok:
+        print _C_ERR + "[F] Problem with checks, not executing simulation." + _C_ENDC
         return
 
     try:
