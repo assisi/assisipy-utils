@@ -13,6 +13,11 @@ New features
   flow receive the appropriate updates
   (towards solving #14 but not complete due to .arena files)
 
+* extra command-line arg, `--ignore-precheck`, which allows the 
+  deployment validation stage result to be ignored. The code is now
+  run in both dry-run and standard runs, but this flag allows the checks to
+  be disregarded, in case the check is too strict.
+
 Issues resolved
 
 * paths in `exec_sim_timed` can include a ~. (closes #31)
@@ -20,6 +25,13 @@ Issues resolved
   of assisipy#49)
 * in log collection of `exec_sim_timed`, large numbers of files were causing 
   a non-responsive hanging program but this is now resolved. (closes #34)
+* arenas/transforms library no longer depends on matplotlib. Functions 
+  moved to arena/rendering.  No internal dependencies/changes found, so 
+  no need to bump major version.
+* `exec_*_timed` more gracefully handle a poorly-defined deployment 
+  specification, including the .assisi, .dep files being unreadable, and 
+  also dep dir nonexistent (closes #29)
+
 
 0.8.0
 -----
