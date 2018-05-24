@@ -441,14 +441,19 @@ class TestCommConfig(object):
             if self.simcmds:
                 print "kill -15 `cat {}`".format(pidfile)
 
-            print "collect_data.py --clean {}".format(self.out_project_file)
+            coll_flags = " --clean"
+            print "collect_data.py {} {}".format(coll_flags, self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
             testtime_file = "ct_starttime.txt"
             print 'find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep -v ^# > {}'.format(datadir, "{}", msg_file)
             print '''find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep started | cut -d' ' -f2 | sort -n | tail -n1 > {}'''.format(datadir, "{}", testtime_file)
 
-            print "show_assisi_dep_test {} -m {} -tf {} --show-hosts".format(self.out_project_file, msg_file, testtime_file)
+            flags = ""
+            if not self.TESTLINK:
+                flags += " --ignore-edgecheck"
+            print "show_assisi_dep_test {} -m {} -tf {} --show-hosts {}".format(
+                self.out_project_file, msg_file, testtime_file, flags)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
             print "neato -Tpdf {}.layout > {}".format(
