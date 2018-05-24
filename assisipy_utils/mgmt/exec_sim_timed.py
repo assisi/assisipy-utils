@@ -1160,6 +1160,18 @@ class SimHandler(object):
         produced. If `expected_file_cnt` is defined, count how many logs were
         retrieved and warn if mismatch
         '''
+
+        try:
+            self._collect_logs(expected_file_cnt=expected_file_cnt)
+        except KeyboardInterrupt:
+            self.err_msg_collect()
+
+    def _collect_logs(self, expected_file_cnt=None):
+        '''
+        retrieve all of the log files that the experiment or simulation
+        produced. If `expected_file_cnt` is defined, count how many logs were
+        retrieved and warn if mismatch
+        '''
         # 1. retrieve data / logs
         wd = os.path.join(self.project_root, self.config['DEPLOY_DIR'])
         self.cd(wd)
@@ -1277,11 +1289,7 @@ def main():
 
         hdlr.close_active_processes()
         hdlr.close_logs()
-        try:
-            hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
-        except KeyboardInterrupt:
-            hdlr.err_msg_collect()
-
+        hdlr.collect_logs(expected_file_cnt=expected_file_cnt)
 
         hdlr.cd(cwd) # go back to original location
 

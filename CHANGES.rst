@@ -18,6 +18,8 @@ Issues resolved
 * paths in `exec_sim_timed` can include a ~. (closes #31)
 * terminal/console is useable after `exec_*_timed` (closes #35, independently
   of assisipy#49)
+* in log collection of `exec_sim_timed`, large numbers of files were causing 
+  a non-responsive hanging program but this is now resolved. (closes #34)
 
 0.8.0
 -----
