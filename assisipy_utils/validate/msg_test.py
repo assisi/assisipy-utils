@@ -56,7 +56,7 @@ def get_outmap(fg, casu, verb=False):
 
     return sendto
 
-def get_inmap(fg, casu, default_weight=None, verb=False):
+def get_inmap(fg, casu, default_weight=0.0, verb=False):
     '''
     given the flattened graph, `fg`, find a map of connections for
     which the node `casu` may receive messages from
@@ -77,7 +77,7 @@ def get_inmap(fg, casu, default_weight=None, verb=False):
     if verb: print "expect to receive from..."
     for src, dest in fg.in_edges(casu):
         attr = dict(fg.get_edge(src, dest).attr)
-        lbl = attr.get('label')
+        lbl = attr.get('label', "")
         w = float(attr.get('weight', default_weight))
 
         if verb: print "\t<-- {} w={:.2f} label: {}".format(src, w, lbl)
@@ -121,26 +121,45 @@ def show_inout(nbg):
             my_recvfrom.append(src)
 
 
-def flatten_AGraph(nbg):
+def flatten_AGraph(nbg, layer_select=None):
     '''
     process a multi-layer CASU interaction graph file and return
     a flattened graph.
+
+    If layer_select is set, only include nodes in the selected layer
 
     Note: does not support node properties!
     '''
     g = pgv.AGraph(directed=True, strict=False) # allow self-loops.
 
+
     for _n in nbg.nodes():
         # trim any layer info off the node
-        n = _n.split('/')[-1]
+        l, n = _n.split('/')[0:2]
         #print n, _n
+        if layer_select is not None and l != layer_select:
+            print "[I] excluded node '{}' ('{}') since not in layer '{}'".format(
+                n, _n, layer_select)
+            continue
+
+        # if we got here, not filtered, so add it
         g.add_node(n)
 
 
     for i, (_src, _dest) in enumerate(nbg.edges()):
         # trimmed versions
-        s = _src.split('/')[-1]
-        d = _dest.split('/')[-1]
+        ls, s = _src.split('/')[0:2]
+        ld, d = _dest.split('/')[0:2]
+
+        # first, filter on layers.  Note: for a messaging test within a single
+        # layer, we should only include the edge if both nodes are in tgt layer
+        if layer_select is not None:
+            if ls != layer_select or ld != layer_select:
+                print "[I] excluded edge '{}'-->'{}' since not wholly in layer '{}'".format(
+                    s, d, layer_select)
+
+                continue
+
 
         # if it doesn't exist already, add edge
         if not (s in g and d in g):
@@ -170,8 +189,8 @@ class TestMsgChannels(object):
     TSTR_FMT = "%Y/%m/%d-%H:%M:%S-%Z"
 
     #{{{ init
-    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None, 
-            timeout=50.0, sync_period=10.0, interval=6.0):
+    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None,
+            timeout=50.0, sync_period=10.0, interval=6.0, layer_select=None):
 
         self._rtc_pth, self._rtc_fname = os.path.split(casu_name)
         if self._rtc_fname.endswith('.rtc'):
@@ -183,6 +202,7 @@ class TestMsgChannels(object):
         self.timeout     = timeout
         self.interval    = interval
         self.sync_period = sync_period
+        self.layer_select = layer_select
         self.nbg = nbg
         self.read_interactions()
 
@@ -216,9 +236,11 @@ class TestMsgChannels(object):
     #{{{ read_interactions
     def read_interactions(self):
         g_hier = pgv.AGraph(self.nbg)
-        g_flat = flatten_AGraph(g_hier)
+        g_flat = flatten_AGraph(g_hier, self.layer_select)
+        # since in/out are both derived from the flattened, filtered graph, we
+        # don't need to filter these generators as well (for layers)
         self.in_map = get_inmap(g_flat, self.name)
-        self.out_map = get_outmap(g_flat, self.name)
+        self.out_map = get_outmap(g_flat, self.name, verb=True)
     #}}}
 
 
@@ -462,13 +484,15 @@ if __name__ == '__main__':
     parser.add_argument('--timeout', type=float, default=60.0)
     parser.add_argument('--sync_period', type=float, default=10.0)
     parser.add_argument('--interval', type=float, default=6.0)
+    parser.add_argument('--layer', help='Name of single layer to action', default=None)
     parser.add_argument('--delay', type=int, required=True,
                         help="how many periods to wait before emitting")
     args = parser.parse_args()
 
     c = TestMsgChannels(args.name, logname=args.output, delay=args.delay,
-                        nbg=args.nbg, timeout=args.timeout, 
-                        sync_period=args.sync_period, interval=args.interval,)
+                        nbg=args.nbg, timeout=args.timeout,
+                        sync_period=args.sync_period, interval=args.interval,
+                        layer_select=args.layer)
 
     if c.verb > 0: print "Msg test - connected to {}".format(c.name)
     try:

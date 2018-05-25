@@ -53,7 +53,7 @@ def read_node_recs(recs_file):
 #}}}
 
 #{{{ annotate according to log file
-def annotate_links_by_msg(DG, msgs_ok, layered=True):
+def annotate_links_by_msg(DG, msgs_ok, layered=True, layer_select=None):
     '''
     for each node-node link (=edge in the graph), if a message was successfully
     received in the conn_test phase, mark as green. else mark as red.
@@ -61,6 +61,8 @@ def annotate_links_by_msg(DG, msgs_ok, layered=True):
     changes are made inline
     if layered is True, process graph as if the edges are named as layer/casuname
     (otherwise, DG should have a flat definition)
+    if layer_select is defined, ignore any missing messages from outside of
+    the selected layer.
     '''
 
     # apply a color to each edge according to whether message was rx ok.
@@ -69,15 +71,31 @@ def annotate_links_by_msg(DG, msgs_ok, layered=True):
         edge.attr['penwidth'] = 2
         # default color (assume fail until seen msg)
         edge.attr['color'] = "red"
+        edge.attr['style'] = "solid"
         hit = False
 
         # check whether the edge is linked ok during the test
         _f = str(edge[0].encode('ascii','ignore'))
         _t = str(edge[1].encode('ascii','ignore'))
+        l_fr, l_to = None, None
         if layered and "/" in _f:
-            _, _f = _f.split('/')[0:2]
+            l_fr, _f = _f.split('/')[0:2]
         if layered and "/" in _t:
-            _, _t = _t.split('/')[0:2]
+            l_to, _t = _t.split('/')[0:2]
+
+
+        if layer_select is not None:
+            #print "testing layer {} -> {}, {} {}".format(
+            #    _f, _t, l_fr, l_to,)
+
+            if not (l_fr == layer_select and l_to == layer_select):
+                # we can't test this edge anyway, so color in the "non-tested" attrs.
+                #print "[I] ignoring the edge {} {} since not wholly inside tested layer".format(_f, _t)
+
+                edge.attr['color'] = "gray60"
+                edge.attr['style'] = "dashed"
+                continue
+
 
         for mf, mt in msgs_ok:
             mf = str(mf)
@@ -85,34 +103,49 @@ def annotate_links_by_msg(DG, msgs_ok, layered=True):
             if _f == mf and _t == mt:
                 #print "hit ", edge
                 hit = True
+                edge.attr['style'] = "solid"
                 edge.attr['color'] = "green3"
 
         if not hit:
             print "[E] failed to traverse ", edge
 
-def annotate_nodes_by_writemsg(DG, node_write_ok, layered=True):
+
+
+def annotate_nodes_by_writemsg(DG, node_write_ok, layered=True, layer_select=None):
     '''
     for each node that we could successfully write values to, mark the node in
     DG as green. Else mark as red.
 
     if layered is True, process graph as if the edges are named as layer/casuname
     (otherwise, DG should have a flat definition)
+    if layer_select is defined, ignore any missing nodes from outside of
+    the selected layer.
 
     changes made inline
     '''
     for node in DG.nodes():
         # default color
         node.attr['color'] = 'red'
+        node.attr['style'] = "solid"
         node.attr['penwidth'] = 3
         hit = False
         _n = str(node.encode('ascii', 'ignore'))
         if layered and "/" in _n:
-            _, _n = _n.split('/')[0:2]
+            l, _n = _n.split('/')[0:2]
+
+        if layer_select is not None and l != layer_select:
+            # skip this one, it was not tested
+            print "[I] skipping this one -- wronge layer {}.".format(_n), l
+            node.attr['color'] = "gray60"
+            node.attr['style'] = "dashed"
+            node.attr['penwidth'] = 2
+            continue
 
         for n in node_write_ok:
             if n == _n:
                 hit = True
                 node.attr['color'] = "green3"
+                node.attr['style'] = "solid"
 
         if not hit:
             print "[E] failed to set values on node {}",format(_n)

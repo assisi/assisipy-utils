@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 desc='''
-A simple tool to augment a .nbg file with labels, positions, and edge 
+A simple tool to augment a .nbg file with labels, positions, and edge
 weights, and compute the incoming edge weight total, for each node.
 
 This is an example usage of the validate.TopoGeomGraph class, extending to:
@@ -30,6 +30,8 @@ def main():
                         "a 9-CASU array")
     parser.add_argument('-o', '--outfile', help='name to generate output graph in', default=None)
     parser.add_argument('-v', '--verb', action='store_true', help="be verbose")
+    parser.add_argument('-ie', '--ignore-edgecheck', action='store_true', help="include hostname annotations in the output graph")
+    parser.add_argument('--check-layer', help='Name of single layer to check', default=None)
     parser.add_argument('-sh', '--show-hosts', action='store_true', help="include hostname annotations in the output graph")
     parser.add_argument("-tf", "--time_file", type=str, default=None,
                         help="file containing time of the experiment, used in graph label")
@@ -50,8 +52,11 @@ def main():
     node_write_ok = validate.read_node_recs(args.msg_file)
 
     # color the links and nodes to report success/failure of tests
-    validate.annotate_links_by_msg(TGG.DG, msgs_ok)
-    validate.annotate_nodes_by_writemsg(TGG.DG, node_write_ok)
+    TGG.color_asif_untested()
+    if args.ignore_edgecheck is False:
+        validate.annotate_links_by_msg(TGG.DG, msgs_ok, layer_select=args.check_layer)
+    validate.annotate_nodes_by_writemsg(TGG.DG, node_write_ok,
+                                        layer_select=args.check_layer)
 
     # add extra host info, but not before all the checks are done
     if args.show_hosts:

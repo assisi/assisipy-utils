@@ -40,7 +40,7 @@ RES=${1:-10}
 now=$(date +%s)
 # we want to modulo to a specific resolution, e.g. 10s
 # so we round to most recent (already passed) multiple of that
-# then add one 
+# then add one
 # and that is our sync time
 prevq=$((${now}/${RES}))
 part_elap=$((${now}%${RES}))
@@ -58,20 +58,20 @@ echo "  --> (${dff}s) since then || ${part_elap} "
 echo "  next one will be at ${dnext}. We wait for ${dly}s"
 
 if we want to have the countdown visualised
-for i in `seq ${dly} -1 1`; do sleep 1; n2=$(date +"%T"); printf "\r ${i}s $n2 "; done  
+for i in `seq ${dly} -1 1`; do sleep 1; n2=$(date +"%T"); printf "\r ${i}s $n2 "; done
   (or maybe just ${i}s until launch @ ${dnext} )
 
 
 
 
 '''
-# so what we need is 
+# so what we need is
 #RES=[var from python]; now=$(date +%s); #part_elap=$((${now}%${RES}))
 #dly=$((${RES} - ${part_elap} ))
 #for i in $(seq ${dly} -1 1) ; do sleep 1; printf "\r ${i}s until launch"; done
 
 #sleep for ${RES} - part_elap sec
-# 
+#
 #}}}
 
 class TestCommConfig(object):
@@ -80,8 +80,8 @@ class TestCommConfig(object):
     """
 
     #{{{ initialiser
-    def __init__(self, project_file_name, testlinks=True, simcmds=False, 
-            timeout=60.0, sync_period=None, interval=None):
+    def __init__(self, project_file_name, testlinks=True, simcmds=False,
+            timeout=60.0, sync_period=None, interval=None, layer=None):
         """
         Parses the configuration files and initializes internal data structures.
         """
@@ -97,8 +97,10 @@ class TestCommConfig(object):
             self.sync_period = 10
         self.interval    = interval
         if self.interval is None:
-            self.interval = 5.25
+            if self.TESTLINK: self.interval = 5.25
+            else: self.interval = 2.0
         self.auto_delay = True
+        self.layer_select = layer
 
         self.project_root = os.path.dirname(os.path.abspath(project_file_name))
         self.sandbox_dir = self.proj_name + '_commconfig' + '_sandbox'
@@ -145,12 +147,17 @@ class TestCommConfig(object):
         self.prepared = True
 
     def validate_config(self):
-        num_nodes = 0 
-        for layer in sorted(self.arena):
+        num_nodes = 0
+        if self.layer_select is None:
+            layers = sorted(self.arena)
+        else:
+            layers = [self.layer_select]
+
+        for layer in layers:
             for casu in sorted(self.arena[layer]):
                 num_nodes += 1
-        # STILL don't have an estimated duration since STILL didn't parse 
-        # the nbg file and look for #outlinks (.successors?) 
+        # STILL don't have an estimated duration since STILL didn't parse
+        # the nbg file and look for #outlinks (.successors?)
         # so for now just "know" that the interval is 7s
         # LAZY way to "know" is by defining externally, for now. interval
         total_duration= self.interval * num_nodes
@@ -193,8 +200,13 @@ class TestCommConfig(object):
         # and with added args and extra support files for those
         # CASUs with a calibration entry
         i = 0
+        if self.layer_select is None:
+            layers = sorted(self.arena)
+        else:
+            layers = [self.layer_select]
+
         main_dep = {}
-        for layer in sorted(self.arena):
+        for layer in layers:
             main_dep[layer] = {}
             for casu in sorted(self.arena[layer]):
                 # find the basic deployment info
@@ -208,10 +220,11 @@ class TestCommConfig(object):
 
                 testdepinfo['controller'] = self.test_controller
                 testdepinfo['prefix'] = self.test_dep_prefix
+                testdepinfo['args'] = []
 
                 if self.TESTLINK:
                     # we need to send a few args and also extra files.
-                    testdepinfo['args'] = ['--delay {}'.format(i)]
+                    testdepinfo['args'] += ['--delay {}'.format(i)]
                     i += 1 # we need to compute the number of outlinks, not just
                     # one delay step per casu.
                     testdepinfo['args'] += ['--nbg {}'.format(self.nbg_file)]
@@ -226,6 +239,10 @@ class TestCommConfig(object):
                     if self.sync_period is not None:
                         testdepinfo['args'] += ['--sync_period {}'.format(
                             self.sync_period)]
+                    # add in the layer select.p
+                    if self.layer_select is not None:
+                        testdepinfo['args'] += ['--layer {}'.format(
+                            self.layer_select)]
 
 
                     testdepinfo['extra'] = [self.nbg_file, ]
@@ -236,6 +253,14 @@ class TestCommConfig(object):
                     # override these
                     testdepinfo['args'] = ['--order {}'.format(i)]
                     i += 1
+                    if self.interval is not None:
+                        testdepinfo['args'] += ['--interval {}'.format(
+                            self.interval)]
+
+                    if self.sync_period is not None:
+                        testdepinfo['args'] += ['--sync_period {}'.format(
+                            self.sync_period)]
+                    testdepinfo['results'] = ['*.log']
 
                 main_dep[layer][casu] = testdepinfo
         #}}}
@@ -389,7 +414,7 @@ class TestCommConfig(object):
             raise ValueError("[F] errors found ({}) in CASU port specification. Aborting.".format(fatal_cnt))
         else:
             print OKGREEN + "[I] no duplicate msg_addrs found in areana specification. " + \
-                "\n    Checked {} casus".format(casu_cnt) + ENDC 
+                "\n    Checked {} casus".format(casu_cnt) + ENDC
 
         #}}}
 
@@ -400,6 +425,9 @@ class TestCommConfig(object):
         pidfile = "/tmp/pg_pid_aput_tc" # somewhat unique name
         graph_file = "results_{}.pdf".format(self.proj_name)
 
+        layer_args = ""
+        if self.layer_select is not None:
+            layer_args = " --layer {} ".format(self.layer_select)
         print "\n" + "="*75
         print "--- execute these commands to run full test and graph results ---"
         if self.simcmds: # message is kind of redundant, user asked these commands.
@@ -409,21 +437,21 @@ class TestCommConfig(object):
         print "cd {}".format(os.path.join(self.project_root, self.sandbox_dir))
         if self.simcmds:
             print "assisi_playground & echo $! > {}".format(pidfile)
-            print "sim.py {}".format(self.out_project_file)
+            print "sim.py {} {}".format(layer_args, self.out_project_file)
 
-        print "deploy.py {}".format(self.out_project_file)
+        print "deploy.py {} {}".format(layer_args, self.out_project_file)
         # HERE: we put in a delay to start 1s after the sync_period finish
-        # This means that the assisirun command has the entire period to 
-        # complete, if we launch just at the start of one period. See notes 
+        # This means that the assisirun command has the entire period to
+        # complete, if we launch just at the start of one period. See notes
         # above for more detailed (bash) commands used in debugging
         if self.auto_delay:
             calc='''RES={}; now=$(date +%s); rmdr=$((${{now}} % ${{RES}})); dly=$((${{RES}} - ${{rmdr}})); '''.format(int(self.sync_period))
             waitloop='''for i in $(seq ${{dly}} -1 1); do sleep 1; printf "\\r ${{i}}s until launch"; done'''.format() # format needed for the {{}} to be interpredte ok (sorry for inconsistency otherwise)
 
-            print "{} {} ; assisirun.py {}".format(
-                    calc, waitloop, self.out_project_file)
+            print "{} {} ; assisirun.py {} {}".format(
+                    calc, waitloop, layer_args, self.out_project_file)
         else:
-            print "assisirun.py {}".format(self.out_project_file)
+            print "assisirun.py {} {}".format(layer_args, self.out_project_file)
 
         print "# wait for approx {}s".format(self.timeout)
 
@@ -431,14 +459,22 @@ class TestCommConfig(object):
             if self.simcmds:
                 print "kill -15 `cat {}`".format(pidfile)
 
-            print "collect_data.py --clean {}".format(self.out_project_file)
+            coll_flags = " --clean"
+            print "collect_data.py {} {} {}".format(coll_flags, layer_args, self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
             testtime_file = "ct_starttime.txt"
             print 'find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep -v ^# > {}'.format(datadir, "{}", msg_file)
             print '''find "{}" -type f -name "*msgtest.log" -exec cat {} \; | grep started | cut -d' ' -f2 | sort -n | tail -n1 > {}'''.format(datadir, "{}", testtime_file)
 
-            print "show_assisi_dep_test {} -m {} -tf {} --show-hosts".format(self.out_project_file, msg_file, testtime_file)
+            flags = ""
+            if not self.TESTLINK:
+                flags += " --ignore-edgecheck "
+
+            if self.layer_select is not None:
+                flags += " --check-layer {} ".format(self.layer_select)
+            print "show_assisi_dep_test {} -m {} -tf {} --show-hosts {}".format(
+                self.out_project_file, msg_file, testtime_file, flags)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(
             #    self.nbg_file, self.arena_file, self.out_project_file, msg_file)
             print "neato -Tpdf {}.layout > {}".format(
@@ -456,13 +492,13 @@ def main():
     parser.add_argument('project', help='name of .assisi file specifying the project details.')
     parser.add_argument('--links', type=int, default=1, )
     # TODO: This is fully implemented yet!
-    parser.add_argument('--timeout', type=float, default=60.0, 
+    parser.add_argument('--timeout', type=float, default=60.0,
             help="explicitly set the message test runtime")
     parser.add_argument('--sync_period', type=float, default=None,
             help="how long for all casus to wait to synchronise (due to variability in deployment duration across different bbgs")
-    parser.add_argument('--interval', type=float, default=None, 
+    parser.add_argument('--interval', type=float, default=None,
             help="duration to wait between starting each casu test")
-    parser.add_argument('--layer', help='Name of single layer to action', default='all')
+    parser.add_argument('--layer', help='Name of single layer to action', default=None)
     parser.add_argument('-na', '--skip-annotate', action='store_true',
             help='annotate graph or solely visual test',)
     parser.add_argument('-sim', '--use-simulator', action='store_true',
@@ -473,9 +509,10 @@ def main():
     else:
         args.annotate = True
 
-    project = TestCommConfig(args.project, testlinks=args.links, 
-            simcmds=args.use_simulator, timeout=args.timeout,
-            sync_period=args.sync_period, interval=args.interval)
+    project = TestCommConfig(
+        args.project, testlinks=args.links, simcmds=args.use_simulator,
+        timeout=args.timeout, sync_period=args.sync_period,
+        interval=args.interval, layer=args.layer)
 
     project.validate_config()
     project.prep()
