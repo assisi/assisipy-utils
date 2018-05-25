@@ -56,7 +56,7 @@ def get_outmap(fg, casu, verb=False):
 
     return sendto
 
-def get_inmap(fg, casu, default_weight=None, verb=False):
+def get_inmap(fg, casu, default_weight=0.0, verb=False):
     '''
     given the flattened graph, `fg`, find a map of connections for
     which the node `casu` may receive messages from
@@ -77,7 +77,7 @@ def get_inmap(fg, casu, default_weight=None, verb=False):
     if verb: print "expect to receive from..."
     for src, dest in fg.in_edges(casu):
         attr = dict(fg.get_edge(src, dest).attr)
-        lbl = attr.get('label')
+        lbl = attr.get('label', "")
         w = float(attr.get('weight', default_weight))
 
         if verb: print "\t<-- {} w={:.2f} label: {}".format(src, w, lbl)
@@ -170,7 +170,7 @@ class TestMsgChannels(object):
     TSTR_FMT = "%Y/%m/%d-%H:%M:%S-%Z"
 
     #{{{ init
-    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None, 
+    def __init__(self, casu_name, logname, delay, nbg, msg_spec=None,
             timeout=50.0, sync_period=10.0, interval=6.0):
 
         self._rtc_pth, self._rtc_fname = os.path.split(casu_name)
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     c = TestMsgChannels(args.name, logname=args.output, delay=args.delay,
-                        nbg=args.nbg, timeout=args.timeout, 
+                        nbg=args.nbg, timeout=args.timeout,
                         sync_period=args.sync_period, interval=args.interval,)
 
     if c.verb > 0: print "Msg test - connected to {}".format(c.name)
