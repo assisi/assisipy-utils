@@ -81,7 +81,7 @@ class TestCommConfig(object):
 
     #{{{ initialiser
     def __init__(self, project_file_name, testlinks=True, simcmds=False,
-            timeout=60.0, sync_period=None, interval=None):
+            timeout=60.0, sync_period=None, interval=None, layer=None):
         """
         Parses the configuration files and initializes internal data structures.
         """
@@ -100,6 +100,7 @@ class TestCommConfig(object):
             if self.TESTLINK: self.interval = 5.25
             else: self.interval = 2.0
         self.auto_delay = True
+        self.layer_select = layer
 
         self.project_root = os.path.dirname(os.path.abspath(project_file_name))
         self.sandbox_dir = self.proj_name + '_commconfig' + '_sandbox'
@@ -147,7 +148,12 @@ class TestCommConfig(object):
 
     def validate_config(self):
         num_nodes = 0
-        for layer in sorted(self.arena):
+        if self.layer_select is None:
+            layers = sorted(self.arena)
+        else:
+            layers = [self.layer_select]
+
+        for layer in layers:
             for casu in sorted(self.arena[layer]):
                 num_nodes += 1
         # STILL don't have an estimated duration since STILL didn't parse
@@ -194,8 +200,13 @@ class TestCommConfig(object):
         # and with added args and extra support files for those
         # CASUs with a calibration entry
         i = 0
+        if self.layer_select is None:
+            layers = sorted(self.arena)
+        else:
+            layers = [self.layer_select]
+
         main_dep = {}
-        for layer in sorted(self.arena):
+        for layer in layers:
             main_dep[layer] = {}
             for casu in sorted(self.arena[layer]):
                 # find the basic deployment info
@@ -228,6 +239,10 @@ class TestCommConfig(object):
                     if self.sync_period is not None:
                         testdepinfo['args'] += ['--sync_period {}'.format(
                             self.sync_period)]
+                    # add in the layer select.p
+                    if self.layer_select is not None:
+                        testdepinfo['args'] += ['--layer {}'.format(
+                            self.layer_select)]
 
 
                     testdepinfo['extra'] = [self.nbg_file, ]
@@ -410,6 +425,9 @@ class TestCommConfig(object):
         pidfile = "/tmp/pg_pid_aput_tc" # somewhat unique name
         graph_file = "results_{}.pdf".format(self.proj_name)
 
+        layer_args = ""
+        if self.layer_select is not None:
+            layer_args = " --layer {} ".format(self.layer_select)
         print "\n" + "="*75
         print "--- execute these commands to run full test and graph results ---"
         if self.simcmds: # message is kind of redundant, user asked these commands.
@@ -419,9 +437,9 @@ class TestCommConfig(object):
         print "cd {}".format(os.path.join(self.project_root, self.sandbox_dir))
         if self.simcmds:
             print "assisi_playground & echo $! > {}".format(pidfile)
-            print "sim.py {}".format(self.out_project_file)
+            print "sim.py {} {}".format(layer_args, self.out_project_file)
 
-        print "deploy.py {}".format(self.out_project_file)
+        print "deploy.py {} {}".format(layer_args, self.out_project_file)
         # HERE: we put in a delay to start 1s after the sync_period finish
         # This means that the assisirun command has the entire period to
         # complete, if we launch just at the start of one period. See notes
@@ -430,10 +448,10 @@ class TestCommConfig(object):
             calc='''RES={}; now=$(date +%s); rmdr=$((${{now}} % ${{RES}})); dly=$((${{RES}} - ${{rmdr}})); '''.format(int(self.sync_period))
             waitloop='''for i in $(seq ${{dly}} -1 1); do sleep 1; printf "\\r ${{i}}s until launch"; done'''.format() # format needed for the {{}} to be interpredte ok (sorry for inconsistency otherwise)
 
-            print "{} {} ; assisirun.py {}".format(
-                    calc, waitloop, self.out_project_file)
+            print "{} {} ; assisirun.py {} {}".format(
+                    calc, waitloop, layer_args, self.out_project_file)
         else:
-            print "assisirun.py {}".format(self.out_project_file)
+            print "assisirun.py {} {}".format(layer_args, self.out_project_file)
 
         print "# wait for approx {}s".format(self.timeout)
 
@@ -442,7 +460,7 @@ class TestCommConfig(object):
                 print "kill -15 `cat {}`".format(pidfile)
 
             coll_flags = " --clean"
-            print "collect_data.py {} {}".format(coll_flags, self.out_project_file)
+            print "collect_data.py {} {} {}".format(coll_flags, layer_args, self.out_project_file)
             datadir = "data" + self.test_dep_prefix +  self.proj_name
             msg_file = "msgs.csv"
             testtime_file = "ct_starttime.txt"
@@ -477,7 +495,7 @@ def main():
             help="how long for all casus to wait to synchronise (due to variability in deployment duration across different bbgs")
     parser.add_argument('--interval', type=float, default=None,
             help="duration to wait between starting each casu test")
-    parser.add_argument('--layer', help='Name of single layer to action', default='all')
+    parser.add_argument('--layer', help='Name of single layer to action', default=None)
     parser.add_argument('-na', '--skip-annotate', action='store_true',
             help='annotate graph or solely visual test',)
     parser.add_argument('-sim', '--use-simulator', action='store_true',
@@ -488,9 +506,10 @@ def main():
     else:
         args.annotate = True
 
-    project = TestCommConfig(args.project, testlinks=args.links,
-            simcmds=args.use_simulator, timeout=args.timeout,
-            sync_period=args.sync_period, interval=args.interval)
+    project = TestCommConfig(
+        args.project, testlinks=args.links, simcmds=args.use_simulator,
+        timeout=args.timeout, sync_period=args.sync_period,
+        interval=args.interval, layer=args.layer)
 
     project.validate_config()
     project.prep()
