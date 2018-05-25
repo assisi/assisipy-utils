@@ -469,7 +469,10 @@ class TestCommConfig(object):
 
             flags = ""
             if not self.TESTLINK:
-                flags += " --ignore-edgecheck"
+                flags += " --ignore-edgecheck "
+
+            if self.layer_select is not None:
+                flags += " --check-layer {} ".format(self.layer_select)
             print "show_assisi_dep_test {} -m {} -tf {} --show-hosts {}".format(
                 self.out_project_file, msg_file, testtime_file, flags)
             #print "label_conn_results.py --nbg {} --arena {} -pf {} -m {}".format(

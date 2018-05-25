@@ -98,6 +98,25 @@ class TopoGeomGraph(object):
 
     #}}}
 
+    def color_asif_untested(self,):
+        '''
+        color the graph with style as if each edge/node was not tested within
+        the test_conn or flash_test mechanisms. (gray, dashed)
+
+        later tools that interpret the tests can then add indicative styles
+        for pass/fail.
+        (this is not called by default since not all uses are related to active
+        testing)
+        '''
+        for _node in self.DG.nodes():
+            _node.attr['style'] = "dashed"
+            _node.attr['color'] = "gray60"
+
+        # EDGES!
+        for edge in self.DG.edges():
+                edge.attr['color'] = "gray60"
+                edge.attr['style'] = "dashed"
+
     #{{{ add_bbg_annotation
     def add_bbg_annotation(self, dx=1.5, dy=-2.0, shape="octagon"):
         '''
