@@ -1,6 +1,29 @@
 Change and release log
 ======================
 
+0.8.2
+-----
+
+This version update focuses on changes in the validation tools.
+
+New features
+
+* `test_assisi_dep` can now check single layers of a larger deployment.
+  (note that there was an argument `--layer <>` but it was previously ignored)
+* graphs produced by `show_assisi_dep_test` annotate selectively, according
+  to what was tested.  This includes highlighting pass/fail (green/red) and 
+  also de-emphasizing untested nodes/edges (dashed/gray). E.g. if `--links 0`
+  then all edges are shown in gray.
+
+Issues resolved
+
+* the --layer switch is now honoured (closes #32)
+* the --links 0 switch is now functional (closes #36)
+* graphs whose specification does not include specific edge properties
+  are nonetheless testable (closes #33)
+
+
+
 0.8.1
 -----
 
