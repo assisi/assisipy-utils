@@ -90,7 +90,7 @@ class DARC_Manager:
                         contents [layer] = {}
                     contents [layer][casu_label] = {
                         field : self.arena [layer][casu_label][field]
-                        for field in ['sub_addr', 'pub_addr', 'msg_addr']
+                        for field in ['sub_addr', 'pub_addr', 'msg_addr', 'pose']
                     }
                 else:
                     print ('[II] Physical casu {} is not used'.format (casu_label))
