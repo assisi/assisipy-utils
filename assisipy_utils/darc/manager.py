@@ -152,7 +152,6 @@ class DARC_Manager:
         return None
 
 def main ():
-    __create_example_config ()
     args = process_arguments ()
     darcm = DARC_Manager (args.project, args.arena, args.config)
     darcm.create_files ()
