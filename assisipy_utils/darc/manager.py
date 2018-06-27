@@ -3,6 +3,10 @@ from __future__ import print_function
 import argparse
 import yaml
 
+import assisipy.deploy
+import assisipy.assisirun
+import assisipy.collect_data
+
 import graph
 
 BEE_ARENA = 'bee-arena'
@@ -29,6 +33,19 @@ class DARC_Manager:
         self.__create_arena_file ()
         self.__create_dep_file ()
         self.__create_nbg_file ()
+
+    def run (self, destination):
+        d = assisipy.deploy.Deploy (self._assisi_filename)
+        d.prepare ()
+        d.deploy ()
+        ar = assisipy.assisirun.AssisiRun (self._assisi_filename)
+        ar.run ()
+        self.monitor ()
+        dc = assisipy.collect_data.DataCollector (self._assisi_filename, logpath = destination)
+        dc.collect ()
+
+    def monitor (self):
+        raw_input ('Press ENTER to collect data from CASUs')
 
     def create_workers_file (self):
         contents = {
