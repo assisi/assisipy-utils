@@ -48,30 +48,38 @@ class DARC_Manager:
         raw_input ('Press ENTER to collect data from CASUs')
 
     def create_workers_file (self):
+        not_used_CASUs = []
         contents = {
             'workers': []
         }
         for layer in self.arena:
             for casu_label in self.arena [layer]:
+                casu_number = DARC_Manager._casu_number_4_label (casu_label)
                 if self.__is_casu_used (casu_label):
                     data = {
                         field : self.arena [layer][casu_label][field]
                         for field in ['sub_addr', 'pub_addr', 'msg_addr']
                     }
-                    ## BIG ASSUMPTION HERE
-                    casu_number = int (casu_label [-3:])
-                    data ['casu_number'] = int (casu_label [-3:])
+                    data ['casu_number'] = casu_number
                     hostname = self.__casu_hostname (casu_number)
                     data ['wrk_addr'] = 'tcp://{}:{}'.format (hostname, self.base_worker_port + casu_number)
                     contents ['workers'].append (data)
                 else:
-                    print ('[II] Physical casu {} is not used'.format (casu_label))
+                    not_used_CASUs.append (casu_number)
+        if len (not_used_CASUs) > 0:
+            not_used_CASUs.sort ()
+            print ('[II] Physical casus not used: {}'.format (not_used_CASUs))
         with open ('{}.workers'.format (self.project), 'w') as fd:
             yaml.dump (contents, fd, default_flow_style = False)
             fd.close ()
 
     def casu_key (self, number):
         return 'casu-{:03d}'.format (number)
+
+    @staticmethod
+    def _casu_number_4_label (casu_label):
+        ## BIG ASSUMPTION HERE
+        return int (casu_label [-3:])
 
     def __create_assisi_file (self):
         with open (self._assisi_filename, 'w') as fd:
@@ -82,6 +90,7 @@ class DARC_Manager:
         print ('[I] Created assisi file for project {}'.format (self.project))
 
     def __create_arena_file (self):
+        not_used_CASUs = []
         contents = {}
         for layer in self.arena:
             for casu_label in self.arena [layer]:
@@ -93,7 +102,10 @@ class DARC_Manager:
                         for field in ['sub_addr', 'pub_addr', 'msg_addr', 'pose']
                     }
                 else:
-                    print ('[II] Physical casu {} is not used'.format (casu_label))
+                    not_used_CASUs.append (DARC_Manager._casu_number_4_label (casu_label))
+        if len (not_used_CASUs) > 0:
+            not_used_CASUs.sort ()
+            print ('[II] Physical casus not used: {}'.format (not_used_CASUs))
         with open (self._arena_filename, 'w') as fd:
             yaml.dump (contents, fd, default_flow_style = False)
             fd.close ()
