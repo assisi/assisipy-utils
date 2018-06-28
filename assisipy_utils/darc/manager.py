@@ -68,10 +68,11 @@ class DARC_Manager:
                     not_used_CASUs.append (casu_number)
         if len (not_used_CASUs) > 0:
             not_used_CASUs.sort ()
-            print ('[II] Physical casus not used: {}'.format (not_used_CASUs))
+            print ('[III] Physical casus not used: {}'.format (not_used_CASUs))
         with open ('{}.workers'.format (self.project), 'w') as fd:
             yaml.dump (contents, fd, default_flow_style = False)
             fd.close ()
+        print ('[II] Created workers file')
 
     def casu_key (self, number):
         return 'casu-{:03d}'.format (number)
@@ -166,7 +167,8 @@ def main ():
     args = process_arguments ()
     darcm = DARC_Manager (args.project, args.arena, args.config)
     darcm.create_files ()
-    darcm.create_workers_file ()
+    if args.legacy:
+        darcm.create_workers_file ()
     return None
 
 def process_arguments ():
@@ -192,6 +194,11 @@ def process_arguments ():
         type = str,
         default = 'project',
         help = 'Label used in the name of the assisi, dep, arena, and nbg files'
+    )
+    parser.add_argument (
+        '--legacy',
+        action = 'store_true',
+        help = 'Also generate the workers file'
     )
     return parser.parse_args ()
 
