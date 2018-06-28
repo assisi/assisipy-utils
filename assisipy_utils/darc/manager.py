@@ -195,36 +195,5 @@ def process_arguments ():
     )
     return parser.parse_args ()
 
-def __create_example_config ():
-    with open ('test.config', 'w') as fd:
-        yaml.dump ({
-            'controllers' : {
-                'domset' : {
-                    'main' : '/home/user/binary',
-                    'extra' : ['/home/user/lib_1.py', '/home/user/utils.py'],
-                    'args' : ['--verbose'] ,
-#                    'results' : ['*.csv', '*.log'] ,
-                    'results' : [] ,
-                    'casus': [1, 2, 31]
-                    }
-                },
-            'deploy': {
-                'user' : 'pedro',
-                'prefix' : 'folder/exp',
-                'args': {
-                    'add_casu_number': True,
-                    'add_worker_address': True
-                }
-            },
-            'graph': {
-                'node_CASUs': {
-                    'n1': [21, 22],
-                    'n2': [23, 24],
-                    'n3': [25, 26]
-                },
-                'edges': [['n1', 'n2'], ['n2', 'n3'], ['n3', 'n1']]
-            }
-        }, fd, default_flow_style = False)
-
 if __name__ == '__main__':
     main ()
