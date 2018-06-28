@@ -54,7 +54,7 @@ class DARC_Manager:
         }
         for layer in self.arena:
             for casu_label in self.arena [layer]:
-                casu_number = DARC_Manager._casu_number_4_label (casu_label)
+                casu_number = DARC_Manager.__casu_number_4_label (casu_label)
                 if self.__is_casu_used (casu_label):
                     data = {
                         field : self.arena [layer][casu_label][field]
@@ -77,7 +77,7 @@ class DARC_Manager:
         return 'casu-{:03d}'.format (number)
 
     @staticmethod
-    def _casu_number_4_label (casu_label):
+    def __casu_number_4_label (casu_label):
         ## BIG ASSUMPTION HERE
         return int (casu_label [-3:])
 
@@ -102,7 +102,7 @@ class DARC_Manager:
                         for field in ['sub_addr', 'pub_addr', 'msg_addr', 'pose']
                     }
                 else:
-                    not_used_CASUs.append (DARC_Manager._casu_number_4_label (casu_label))
+                    not_used_CASUs.append (DARC_Manager.__casu_number_4_label (casu_label))
         if len (not_used_CASUs) > 0:
             not_used_CASUs.sort ()
             print ('[II] Physical casus not used: {}'.format (not_used_CASUs))
@@ -125,7 +125,6 @@ class DARC_Manager:
                     if self.config ['deploy'].get ('args', {}).get ('add_worker_address', False):
                         args.append ('tcp://{}:{}'.format (hostname, self.base_worker_port + casu))
                     args.extend (controller ['args'])
-                    print (args)
                     contents [BEE_ARENA][self.casu_key (casu)] = {
                         'controller' : controller ['main']
                         , 'extra'      : [x for x in controller ['extra']]

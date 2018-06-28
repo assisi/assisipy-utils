@@ -17,12 +17,10 @@ class Node:
     def __init__ (self, number, node_CASUs, CASUs):
         self.id = number
         self.CASUs = {c : CASUs [c] for c in node_CASUs}
-        print (self.CASUs)
 
 class Edge:
     def __init__ (self, nodes, dict_nodes):
         self.nodes = (dict_nodes [nodes [0]], dict_nodes [nodes [1]])
-        print (self.nodes)
 
 class Graph:
     def __init__ (self, parameter):
