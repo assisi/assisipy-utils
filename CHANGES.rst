@@ -1,6 +1,14 @@
 Change and release log
 ======================
 
+0.9.0
+-----
+
+New feature
+
+* the darc package allows management of deploying, running code in the CASUs and collecting data from a run.
+It can be used as a command line tool or programmatically.
+
 0.8.2
 -----
 
