@@ -77,6 +77,17 @@ class DARC_Manager:
     def casu_key (self, number):
         return 'casu-{:03d}'.format (number)
 
+    def worker_address_client_side (self, casu_number):
+        return 'tcp:://{}:{}'.format (
+            self.__casu_hostname (casu_number),
+            self.base_worker_port + casu_number
+        )
+
+    def worker_address_server_side (self, casu_number):
+        return 'tcp:://*:{}'.format (
+            self.base_worker_port + casu_number
+        )
+
     @staticmethod
     def __casu_number_4_label (casu_label):
         ## BIG ASSUMPTION HERE
