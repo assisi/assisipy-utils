@@ -18,10 +18,6 @@ class Node:
         self.id = number
         self.CASUs = {c : CASUs [c] for c in node_CASUs}
 
-class Edge:
-    def __init__ (self, nodes, dict_nodes):
-        self.nodes = (dict_nodes [nodes [0]], dict_nodes [nodes [1]])
-
 class Graph:
     def __init__ (self, parameter):
         if isinstance (parameter, dict):
@@ -30,7 +26,6 @@ class Graph:
             raise Exception ('Unexpected argument type to Graph constructor {}'.format (parameter))
         self.CASUs = {c : CASU (c) for n in yaml_graph ['node_CASUs'] for c in yaml_graph ['node_CASUs'][n]}
         self.nodes = {n : Node (n, yaml_graph ['node_CASUs'][n], self.CASUs) for n in yaml_graph ['node_CASUs']}
-        self.edges = [Edge (ns, self.nodes) for ns in yaml_graph ['edges']]
 
     def create_neighbourhood_dot (self):
         result = pygraphviz.AGraph (directed = True)
