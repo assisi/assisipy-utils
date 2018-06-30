@@ -8,10 +8,7 @@ import assisipy.assisirun
 import assisipy.collect_data
 
 import graph
-
-BEE_ARENA = 'bee-arena'
-MANAGER_LAYER = 'fish-tank'
-MANAGER_NODE = '{}/cats'.format (MANAGER_LAYER)
+from graph import BEE_ARENA
 
 class DARC_Manager:
     def __init__ (self, _project, arena_file_name, config_file_name):

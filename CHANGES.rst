@@ -1,6 +1,13 @@
 Change and release log
 ======================
 
+0.9.1
+-----
+
+Bug fixed
+
+* Fixed circular dependency in darc.manager and darc.graph
+
 0.9.0
 -----
 

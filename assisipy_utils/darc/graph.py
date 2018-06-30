@@ -1,7 +1,9 @@
 import pygraphviz
 import yaml
 
-from manager import BEE_ARENA, MANAGER_LAYER, MANAGER_NODE
+BEE_ARENA = 'bee-arena'
+MANAGER_LAYER = 'fish-tank'
+MANAGER_NODE = '{}/cats'.format (MANAGER_LAYER)
 
 class CASU:
     def __init__(self, number):
