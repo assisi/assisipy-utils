@@ -1,14 +1,29 @@
 from __future__ import print_function
 
 import argparse
+import os.path
+import subprocess
+import sys
 import yaml
 
 import assisipy.deploy
-import assisipy.assisirun
 import assisipy.collect_data
 
 import graph
 from graph import BEE_ARENA
+
+def __find_app (app):
+    command = "which " + app
+    process = subprocess.Popen (command, stdout = subprocess.PIPE, shell = True)
+    out, _ = process.communicate ()
+    if process.returncode != 0:
+        print ('This computer does not have application', app)
+        sys.exit (1)
+    else:
+        return out [:-1]
+
+ASSISI_RUN = __find_app ('assisirun.py')
+XTERM = __find_app ('xterm')
 
 class DARC_Manager:
     def __init__ (self, _project, arena_file_name, config_file_name):
@@ -23,7 +38,7 @@ class DARC_Manager:
             for label in self.config ['controllers']
             for c in self.config ['controllers'][label]['casus'] ]
         self.graph = graph.Graph (self.config)
-        self.base_worker_port = 90000
+        self.base_worker_port = 9000
 
     def create_files (self):
         self.__create_assisi_file ()
@@ -35,9 +50,21 @@ class DARC_Manager:
         d = assisipy.deploy.Deploy (self._assisi_filename)
         d.prepare ()
         d.deploy ()
-        ar = assisipy.assisirun.AssisiRun (self._assisi_filename)
-        ar.run ()
+        command = [
+            XTERM,
+            '-geometry', '80x20+600+0',
+            '-bg', 'rgb:5F/1F/0',
+            '-title', '{} deploy'.format (self.project),
+            '-e',
+            'stdbuf -ol {} {} | tee {} ; echo Press ENTER to finish ; read DUMMY'.format (
+                ASSISI_RUN,
+                self._assisi_filename,
+                os.path.join (destination, '{}_assisi-run.log'.format (self.project))
+            )
+        ]
+        process = subprocess.Popen (command)
         self.monitor ()
+        process.wait ()
         dc = assisipy.collect_data.DataCollector (self._assisi_filename, logpath = destination)
         dc.collect ()
 
@@ -75,13 +102,13 @@ class DARC_Manager:
         return 'casu-{:03d}'.format (number)
 
     def worker_address_client_side (self, casu_number):
-        return 'tcp:://{}:{}'.format (
+        return 'tcp://{}:{}'.format (
             self.__casu_hostname (casu_number),
             self.base_worker_port + casu_number
         )
 
     def worker_address_server_side (self, casu_number):
-        return 'tcp:://*:{}'.format (
+        return 'tcp://*:{}'.format (
             self.base_worker_port + casu_number
         )
 
@@ -130,9 +157,9 @@ class DARC_Manager:
                 if hostname is not None:
                     args = []
                     if self.config ['deploy'].get ('args', {}).get ('add_casu_number', False):
-                        args.append (casu)
+                        args.append (str (casu))
                     if self.config ['deploy'].get ('args', {}).get ('add_worker_address', False):
-                        args.append ('tcp://{}:{}'.format (hostname, self.base_worker_port + casu))
+                        args.append ('tcp://*:{}'.format (self.base_worker_port + casu))
                     args.extend (controller ['args'])
                     contents [BEE_ARENA][self.casu_key (casu)] = {
                         'controller' : controller ['main']
