@@ -56,7 +56,7 @@ class DARC_Manager:
             '-bg', 'rgb:5F/1F/0',
             '-title', '{} deploy'.format (self.project),
             '-e',
-            'stdbuf -ol {} {} | tee {} ; echo Press ENTER to finish ; read DUMMY'.format (
+            'stdbuf -oL {} {} | tee {} ; echo Press ENTER to finish ; read DUMMY'.format (
                 ASSISI_RUN,
                 self._assisi_filename,
                 os.path.join (destination, '{}_assisi-run.log'.format (self.project))
