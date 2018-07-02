@@ -1,7 +1,7 @@
 import pygraphviz
 import yaml
 
-BEE_ARENA = 'bee-arena'
+BEE_ARENA = 'beearena'
 MANAGER_LAYER = 'fish-tank'
 MANAGER_NODE = '{}/cats'.format (MANAGER_LAYER)
 
