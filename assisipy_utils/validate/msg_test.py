@@ -121,7 +121,7 @@ def show_inout(nbg):
             my_recvfrom.append(src)
 
 
-def flatten_AGraph(nbg, layer_select=None):
+def flatten_AGraph(nbg, layer_select=None): #noqa
     '''
     process a multi-layer CASU interaction graph file and return
     a flattened graph.
@@ -135,7 +135,10 @@ def flatten_AGraph(nbg, layer_select=None):
 
     for _n in nbg.nodes():
         # trim any layer info off the node
-        l, n = _n.split('/')[0:2]
+        if "/" in _n:
+            l, n = _n.split('/')[0:2]
+        else:
+            n = str(_n)
         #print n, _n
         if layer_select is not None and l != layer_select:
             print "[I] excluded node '{}' ('{}') since not in layer '{}'".format(
@@ -148,12 +151,20 @@ def flatten_AGraph(nbg, layer_select=None):
 
     for i, (_src, _dest) in enumerate(nbg.edges()):
         # trimmed versions
-        ls, s = _src.split('/')[0:2]
-        ld, d = _dest.split('/')[0:2]
+        layer_info = False
+        if "/" in _src:
+            ls, s = _src.split('/')[0:2]
+            layer_info = True
+        else: s = str(_src)
+
+        if "/" in _dest:
+            ld, d = _dest.split('/')[0:2]
+            layer_info = True
+        else: d = str(_dest)
 
         # first, filter on layers.  Note: for a messaging test within a single
         # layer, we should only include the edge if both nodes are in tgt layer
-        if layer_select is not None:
+        if layer_select is not None and layer_info is True:
             if ls != layer_select or ld != layer_select:
                 print "[I] excluded edge '{}'-->'{}' since not wholly in layer '{}'".format(
                     s, d, layer_select)
