@@ -55,7 +55,7 @@ New tools, as yet without example usage, include:
 <a name="#assisipy-ref"></a>[1] Damjan Miklic, Rob Mills, Pedro Mariano, Marsela Polic and Tomislav Haus
 (2018, August). Assisipy: Python API for the ASSISIbf project. Zenodo. https://dx.doi.org/10.5281/zenodo.1320079
 
-<a name="#playground-ref"</a>[2] Pedro Mariano, Damjan Miklic and Rob Mills (2018, August). Assisi-playground bio-hybrid system simulator. Zenodo. https://dx.doi.org/10.5281/zenodo.1323609 
+<a name="#playground-ref"></a>[2] Pedro Mariano, Damjan Miklic and Rob Mills (2018, August). Assisi-playground bio-hybrid system simulator. Zenodo. https://dx.doi.org/10.5281/zenodo.1323609 
 
 
 
