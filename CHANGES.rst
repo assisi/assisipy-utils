@@ -1,6 +1,14 @@
 Change and release log
 ======================
 
+0.9.2
+-----
+
+* generalised `flatten_AGraph` in validate.msg_test to handle non-hierarchical
+  graphs as well.
+* Updated documentation
+
+
 0.9.1
 -----
 
